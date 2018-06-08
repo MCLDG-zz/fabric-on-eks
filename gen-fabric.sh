@@ -8,7 +8,7 @@ source $SDIR/utilities.sh
 REPO=fabric-on-eks
 K8STEMPLATES=k8s-templates
 K8SYAML=k8s
-EFSSERVER=fs-12a33ebb.efs.us-west-2.amazonaws.com
+EFSSERVER=fs-7db2d3d4.efs.us-west-2.amazonaws.com
 FABRICORGS=""
 DATA=/opt/share
 
