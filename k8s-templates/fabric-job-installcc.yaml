@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fabric-installcc
+spec:
+  template:
+    metadata:
+      labels:
+       app: hyperledger
+       role: client
+       org: %ORG%
+       name: fabric-installcc
+    spec:
+     containers:
+       - name: fabric-installcc
+         image: hyperledger/fabric-ca-tools:x86_64-1.1.0
+         env:
+          - name: GOPATH
+            value: /opt/gopath
+          - name: PEERORG
+            value: %ORG%
+         command: ["sh"]
+         args:  ["-c", "/scripts/fabric-installcc.sh 2>&1;"]
+         volumeMounts:
+          - mountPath: /scripts
+            name: rca-scripts
+          - mountPath: /data
+            name: rca-data
+     restartPolicy: Never
+     volumes:
+       - name: rca-scripts
+         persistentVolumeClaim:
+             claimName: rca-scripts-%ORG%-pvc
+       - name: rca-data
+         persistentVolumeClaim:
+             claimName: rca-data-%ORG%-pvc
