@@ -32,6 +32,6 @@ function main {
 SDIR=$(dirname "$0")
 DATADIR=/opt/share/
 SCRIPTS=$DATADIR/rca-scripts
-REPO=fabric-ca-sample
+REPO=fabric-on-eks
 main
 

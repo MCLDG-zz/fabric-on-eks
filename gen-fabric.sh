@@ -5,7 +5,7 @@ DATA=/opt/share
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
 source $SDIR/utilities.sh
-REPO=fabric-ca-sample
+REPO=fabric-on-eks
 K8STEMPLATES=k8s-templates
 K8SYAML=k8s
 EFSSERVER=fs-12a33ebb.efs.us-west-2.amazonaws.com

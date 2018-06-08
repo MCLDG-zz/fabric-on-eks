@@ -5,7 +5,7 @@ set -e
 SDIR=$(dirname "$0")
 REPO=https://github.com/Yolean/kubernetes-kafka.git
 REPODIR=kubernetes-kafka
-FABRICREPO=fabric-ca-sample
+FABRICREPO=fabric-on-eks
 
 function main {
     echo "Beginning setup of Kafka for Hyperledger Fabric on Kubernetes ..."
@@ -26,7 +26,7 @@ function getRepo {
         git clone $REPO
     fi
     #override the 50kafka.yml in the repo
-    cp fabric-ca-sample/kafka/50kafka.yml kubernetes-kafka/kafka/50kafka.yml
+    cp fabric-on-eks/kafka/50kafka.yml kubernetes-kafka/kafka/50kafka.yml
 }
 
 function startStorageService {

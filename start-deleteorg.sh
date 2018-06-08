@@ -97,7 +97,7 @@ source $SDIR/installchaincode.sh
 log "PEER_ORGS at start of deleteorg.sh: '$PEER_ORGS'"
 log "PEER_DOMAINS at start of deleteorg.sh: '$PEER_DOMAINS'"
 DATA=/opt/share/
-REPO=fabric-ca-sample
+REPO=fabric-on-eks
 set +e
 main
 

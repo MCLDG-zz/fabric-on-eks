@@ -147,11 +147,11 @@ On the EC2 instance created in Step 2 above, in the home directory, clone this r
 
 ```bash
 cd
-git clone https://github.com/MCLDG/fabric-ca-sample.git
+git clone https://github.com/MCLDG/fabric-on-eks.git
 ```
 
 ### Step 5: Configure the EFS server URL
-On the EC2 instance created in Step 2 above, in the newly cloned fabric-ca-sample directory, update the script 
+On the EC2 instance created in Step 2 above, in the newly cloned fabric-on-eks directory, update the script 
 'gen-fabric.sh' so that the EFSSERVER variable contains the full URL of the EFS server created in 
 Step 2. You can obtain the EFS URL from the EFS console. The URL should look something like this:
 
@@ -170,7 +170,7 @@ cp scripts/* /opt/share/rca-scripts
 then, in the home directory:
 
 ```bash
-cd fabric-ca-sample
+cd fabric-on-eks
 ./gen-fabric.sh
 ```
 
@@ -178,7 +178,7 @@ cd fabric-ca-sample
 On the EC2 instance created in Step 2 above, in the home directory:
 
 ```bash
-cd fabric-ca-sample
+cd fabric-on-eks
 ./start-fabric.sh
 ```
 
@@ -303,26 +303,26 @@ fabric-ca-client enroll -d -u https://$USER_NAME:$USER_PASS@ica-org1.org1:7054
    
    
    
-cd fabric-ca-sample/
+cd fabric-on-eks/
 git pull
 cd ..
-sudo cp fabric-ca-sample/scripts/* /opt/share/rca-scripts/
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-setup-addorg-fabric-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-setup-addorg-fabric-org1.yaml
+sudo cp fabric-on-eks/scripts/* /opt/share/rca-scripts/
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-setup-addorg-fabric-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-setup-addorg-fabric-org1.yaml
 sleep 10
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-sign-addorg-fabric-org2.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-sign-addorg-fabric-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-sign-addorg-fabric-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-sign-addorg-fabric-org2.yaml
 kubectl get po -n org2
   
-cd /opt/share/fabric-ca-sample
+cd /opt/share/fabric-on-eks
 git pull
 cd ..
-sudo cp fabric-ca-sample/scripts/* rca-scripts/
+sudo cp fabric-on-eks/scripts/* rca-scripts/
 
 
-kubectl delete -f fabric-ca-sample/orderer/fabric-deployment-test-fabric.yaml
-sudo cp fabric-ca-sample/scripts/* rca-scripts/
-kubectl apply -f fabric-ca-sample/orderer/fabric-deployment-test-fabric.yaml
+kubectl delete -f fabric-on-eks/orderer/fabric-deployment-test-fabric.yaml
+sudo cp fabric-on-eks/scripts/* rca-scripts/
+kubectl apply -f fabric-on-eks/orderer/fabric-deployment-test-fabric.yaml
 kubectl get po -n org1
 
 export FABRIC_CA_CLIENT_HOME=/data/orgs/org1/admin
@@ -388,7 +388,7 @@ peer channel update -f /data/org3_config_update_as_envelope.pb -c mychannel -o o
 
 ## Start the fabric network
 
-cd /opt/share/fabric-ca-sample
+cd /opt/share/fabric-on-eks
 git pull
 cd ..
 cd /opt/share
@@ -403,91 +403,91 @@ mkdir rca-data
 mkdir rca-scripts
 mkdir orderer
 
-sudo cp fabric-ca-sample/scripts/* rca-scripts/
+sudo cp fabric-on-eks/scripts/* rca-scripts/
 
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-org0.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-org2.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-data-org0.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-data-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-data-org2.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-org0.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-rca-org2.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-ica-org0.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-ica-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-ica-org2.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-pvc-orderer-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-data-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-data-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-data-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-rca-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-ica-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-ica-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-ica-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-pvc-orderer-org0.yaml
 sleep 5
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-rca-org0.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-rca-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-rca-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-rca-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-rca-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-rca-org2.yaml
 #make sure the svc starts, otherwise subsequent commands may fail
 sleep 10
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-ica-org0.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-ica-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-ica-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-ica-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-ica-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-ica-org2.yaml
 sleep 10
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-register-identities.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-channel-artifacts.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-register-identities.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-channel-artifacts.yaml
 sleep 20
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-orderer-org0.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-orderer-org0.yaml
 sleep 10
 kubectl get po -n org0
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-peer1-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-peer2-org1.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-peer1-org2.yaml
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-peer2-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-peer1-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-peer2-org1.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-peer1-org2.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-peer2-org2.yaml
 sleep 30
 kubectl get po -n org1
 kubectl get po -n org2
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-test-fabric.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-test-fabric.yaml
 
 ## Start the individual steps
 
-cd /opt/share/fabric-ca-sample
+cd /opt/share/fabric-on-eks
 git pull
 cd ..
-sudo cp fabric-ca-sample/scripts/* rca-scripts/
+sudo cp fabric-on-eks/scripts/* rca-scripts/
 
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-create-channel.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-create-channel.yaml
 sleep 10
-kubectl apply -f fabric-ca-sample/k8s/fabric-deployment-create-channel.yaml
+kubectl apply -f fabric-on-eks/k8s/fabric-deployment-create-channel.yaml
 kubectl get po -n org1
 
 
 ## Cleanup
 cd /opt/share
 
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-test-fabric.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-peer2-org2.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-peer1-org2.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-peer2-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-peer1-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-orderer-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-register-identities.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-channel-artifacts.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-ica-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-ica-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-ica-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-test-fabric.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer2-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer1-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer2-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer1-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-orderer-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-register-identities.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-channel-artifacts.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-ica-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-ica-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-ica-org2.yaml
 sleep 5
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-rca-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-rca-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-rca-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-rca-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-rca-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-rca-org2.yaml
 sleep 5
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-org2.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-data-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-data-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-data-org2.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-org2.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-ica-org0.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-ica-org1.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-ica-org2.yaml
-kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-orderer-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-data-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-data-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-data-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-ica-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-ica-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-ica-org2.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-pvc-orderer-org0.yaml
 
 cd /opt/share
 

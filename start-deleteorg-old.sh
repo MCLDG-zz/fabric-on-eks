@@ -6,7 +6,7 @@ SDIR=$(dirname "$0")
 cp $SDIR/scripts/envaddorgs.sh $SDIR/scripts/env.sh
 source $SDIR/scripts/env.sh
 DATA=/opt/share/
-REPO=fabric-ca-sample
+REPO=fabric-on-eks
 
 # this value must be changed here, in gen-fabric.sh and in fabric-job-delete-org.yaml
 ORGTODELETE="org2"
@@ -89,27 +89,27 @@ function removeDirs {
 function removeNamespaces {
     log "Deleting K8s namespaces"
     cd $HOME
-    kubectl delete -f fabric-ca-sample/k8s/fabric-namespace-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-namespace-$ORG.yaml
 }
 
 function stopPVC {
     log "Stopping PVC in K8s"
     cd $HOME
-    kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-scripts-$ORG.yaml
-    kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-data-$ORG.yaml
-    kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-rca-$ORG.yaml
-    kubectl delete -f fabric-ca-sample/k8s/fabric-pvc-ica-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-scripts-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-data-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-pvc-rca-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-pvc-ica-$ORG.yaml
 }
 
 function stopRCA {
     log "Stopping RCA in K8s"
-    kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-rca-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-deployment-rca-$ORG.yaml
     confirmDeploymentsStopped rca
 }
 
 function stopICA {
     log "Stopping ICA in K8s"
-    kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-ica-$ORG.yaml
+    kubectl delete -f fabric-on-eks/k8s/fabric-deployment-ica-$ORG.yaml
     confirmDeploymentsStopped ica
 }
 
@@ -123,7 +123,7 @@ function stopPeers {
     log "Stopping Peers in K8s"
     local COUNT=1
     while [[ "$COUNT" -le $NUM_PEERS ]]; do
-        kubectl delete -f fabric-ca-sample/k8s/fabric-deployment-peer$COUNT-$ORG.yaml
+        kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer$COUNT-$ORG.yaml
         COUNT=$((COUNT+1))
     done
     confirmDeploymentsStopped peer

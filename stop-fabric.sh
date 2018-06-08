@@ -29,5 +29,5 @@ SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
 source $SDIR/utilities.sh
 DATA=/opt/share/
-REPO=fabric-ca-sample
+REPO=fabric-on-eks
 main

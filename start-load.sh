@@ -6,7 +6,7 @@ SDIR=$(dirname "$0")
 DATA=/opt/share
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
-REPO=fabric-ca-sample
+REPO=fabric-on-eks
 
 function main {
     log "Beginning setup of Hyperledger Fabric on Kubernetes ..."
