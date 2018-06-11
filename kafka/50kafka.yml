@@ -65,7 +65,7 @@ spec:
         - name: KAFKA_MIN_INSYNC_REPLICAS
           value: "2"
         - name: KAFKA_ADVERTISED_LISTENERS
-          value: INSIDE://broker.kafka:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
+          value: INSIDE://broker.kafka:9092,OUTSIDE://%ELB-HOSTNAME%:9094
         - name: KAFKA_LISTENERS
           value: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP

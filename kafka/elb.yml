@@ -5,7 +5,7 @@ metadata:
   namespace: kafka
 spec:
   ports:
-  - port: 9092
+  - port: 9094
   selector:
     app: kafka
   type: LoadBalancer

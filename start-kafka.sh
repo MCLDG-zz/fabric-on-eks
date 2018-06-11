@@ -54,13 +54,29 @@ function startZookeeper {
     kubectl apply -f zookeeper/51zoo.yml
 }
 
+function startExternalELB {
+    echo "Starting External ELB service for Kafka brokers"
+    cd $HOME/$FABRICREPO
+    kubectl apply -f kafka/elb.yml
+    #wait for service to be created and hostname to be available. This could take a few seconds
+    ELB-HOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+    while [ "${ELB-HOSTNAME}" != *"elb"* ]; do
+        echo "Waiting on Kafka to create service. Hostname = ${ELB-HOSTNAME}"
+        ELB-HOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+        sleep 10
+    done
+    #update 50kafka.yml with the hostname. This is used in the external Kafka broker address
+    sed -e "s/%ELB-HOSTNAME%/${ELB-HOSTNAME}/g" kafka/50kafka.yml > kafka/50kafka-aws.yml
+
+}
+
 function startKafka {
     echo "Starting Kafka service"
     cd $HOME/$REPODIR
     kubectl apply -f kafka/10broker-config.yml
     kubectl apply -f kafka/20dns.yml
     kubectl apply -f kafka/30bootstrap-service.yml
-    kubectl apply -f kafka/50kafka.yml
+    kubectl apply -f kafka/50kafka-aws.yml
     #wait for Kafka to deploy. This could take a couple of minutes
     PODSPENDING=$(kubectl get pods --namespace=kafka | awk '{print $2}' | cut -d '/' -f1 | grep 0 | wc -l | awk '{print $1}')
     while [ "${PODSPENDING}" != "0" ]; do
