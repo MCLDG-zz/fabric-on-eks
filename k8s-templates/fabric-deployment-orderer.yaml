@@ -67,7 +67,7 @@ spec:
           - name: ORDERER_KAFKA_VERBOSE
             value: "true"
           - name: ORDERER_KAFKA_VERSION
-            value: 1.0.1
+            value: 1.0.0
 
          ports:
           - containerPort: 7050
