@@ -68,7 +68,8 @@ spec:
             value: "true"
           - name: ORDERER_KAFKA_VERSION
             value: 1.0.0
-
+          - name: GODEBUG
+            value: "netdns=go"
          ports:
           - containerPort: 7050
          command: ["sh"]
