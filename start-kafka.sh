@@ -31,9 +31,6 @@ function getRepo {
         #git checkout tags/v3.0.0 - different folder structure - does not support AWS storage classes
         git checkout tags/v4.1.0
     fi
-    #override the 50kafka.yml in the repo
-    cd $HOME
-    cp fabric-on-eks/kafka/50kafka.yml kubernetes-kafka/kafka/50kafka.yml
 }
 
 function startStorageService {
@@ -77,7 +74,8 @@ function startKafka {
     kubectl apply -f kafka/10broker-config.yml
     kubectl apply -f kafka/20dns.yml
     kubectl apply -f kafka/30bootstrap-service.yml
-    kubectl apply -f kafka/50kafka-aws.yml
+    #override the 50kafka.yml in the repo
+    kubectl apply -f $HOME/$FABRICREPO/kafka/50kafka-aws.yml
     #wait for Kafka to deploy. This could take a couple of minutes
     PODSPENDING=$(kubectl get pods --namespace=kafka | awk '{print $2}' | cut -d '/' -f1 | grep 0 | wc -l | awk '{print $1}')
     while [ "${PODSPENDING}" != "0" ]; do
