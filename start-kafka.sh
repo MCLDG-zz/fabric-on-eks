@@ -12,6 +12,7 @@ function main {
     getRepo
     startStorageService
     startZookeeper
+    startExternalELB
     startKafka
 #    testKafka
     whatsRunning
