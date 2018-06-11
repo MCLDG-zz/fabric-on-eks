@@ -60,14 +60,14 @@ function startExternalELB {
     cd $HOME/$FABRICREPO
     kubectl apply -f kafka/elb.yml
     #wait for service to be created and hostname to be available. This could take a few seconds
-    ELB-HOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
-    while [ "${ELB-HOSTNAME}" != *"elb"* ]; do
-        echo "Waiting on Kafka to create service. Hostname = ${ELB-HOSTNAME}"
-        ELB-HOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+    ELBHOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+    while [ "${ELBHOSTNAME}" != *"elb"* ]; do
+        echo "Waiting on Kafka to create service. Hostname = ${ELBHOSTNAME}"
+        ELBHOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
         sleep 10
     done
     #update 50kafka.yml with the hostname. This is used in the external Kafka broker address
-    sed -e "s/%ELB-HOSTNAME%/${ELB-HOSTNAME}/g" kafka/50kafka.yml > kafka/50kafka-aws.yml
+    sed -e "s/%ELBHOSTNAME%/${ELBHOSTNAME}/g" kafka/50kafka.yml > kafka/50kafka-aws.yml
 
 }
 
