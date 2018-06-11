@@ -61,7 +61,7 @@ function startExternalELB {
     kubectl apply -f kafka/elb.yml
     #wait for service to be created and hostname to be available. This could take a few seconds
     ELBHOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
-    while [ "${ELBHOSTNAME}" != *"elb"* ]; do
+    while [[ "${ELBHOSTNAME}" != *"elb"* ]]; do
         echo "Waiting on Kafka to create service. Hostname = ${ELBHOSTNAME}"
         ELBHOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
         sleep 10
