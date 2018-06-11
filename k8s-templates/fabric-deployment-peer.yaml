@@ -80,6 +80,10 @@ spec:
             value: "true"
           - name: CORE_PEER_CHAINCODELISTENADDRESS
             value: 0.0.0.0:7052
+          - name: CORE_LEDGER_STATE_STATEDATABASE
+            value: CouchDB
+          - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
+            value: couchdb:5984
           - name: ORG
             value: %ORG%
           - name: ORG_ADMIN_CERT

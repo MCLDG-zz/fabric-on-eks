@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-broker
+  namespace: kafka
+spec:
+  ports:
+  - port: 9092
+  selector:
+    app: kafka
+  type: LoadBalancer
