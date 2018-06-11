@@ -27,12 +27,12 @@ function getRepo {
         cd $REPODIR
         #git checkout tags/v3.2.0 - this works
         #git checkout tags/v3.1.0 - this doesn't work
-        git checkout tags/v3.0.0
-
+        #git checkout tags/v3.0.0 - different folder structure - does not support AWS storage classes
+        git checkout tags/v4.1.0
     fi
     #override the 50kafka.yml in the repo
     cd $HOME
-#    cp fabric-on-eks/kafka/50kafka.yml kubernetes-kafka/kafka/50kafka.yml
+    cp fabric-on-eks/kafka/50kafka.yml kubernetes-kafka/kafka/50kafka.yml
 }
 
 function startStorageService {
