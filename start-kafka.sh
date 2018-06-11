@@ -25,7 +25,7 @@ function getRepo {
         # clone repo, if it hasn't already been cloned
         git clone $REPO
         cd $REPODIR
-        git checkout tags/v1.0.0
+        git checkout tags/v3.1.0
     fi
     #override the 50kafka.yml in the repo
     cd $HOME
