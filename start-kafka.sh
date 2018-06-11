@@ -24,9 +24,11 @@ function getRepo {
     if [ ! -d $REPODIR ]; then
         # clone repo, if it hasn't already been cloned
         git clone $REPO
+        cd $REPODIR
         git checkout tags/v1.0.0
     fi
     #override the 50kafka.yml in the repo
+    cd $HOME
     cp fabric-on-eks/kafka/50kafka.yml kubernetes-kafka/kafka/50kafka.yml
 }
 
