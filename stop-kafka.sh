@@ -26,12 +26,6 @@ function stopZookeeper {
     echo "Stopping the Zookeeper service"
     cd $HOME/$REPODIR
     kubectl delete -f zookeeper/
-}
-
-function stopKafka {
-    echo "Stopping the Kafka service"
-    cd $HOME/$REPODIR
-    kubectl delete -f kafka/
     #wait for Kafka to stop
     PODSPENDING=$(kubectl get pods --namespace=kafka)
     while [ "${PODSPENDING}" != "" ]; do
@@ -39,6 +33,13 @@ function stopKafka {
         PODSPENDING=$(kubectl get pods --namespace=kafka)
         sleep 10
     done
+}
+
+function stopKafka {
+    echo "Stopping the Kafka service"
+    cd $HOME/$REPODIR
+    kubectl delete -f $HOME/$FABRICREPO/kafka/
+    kubectl delete -f kafka/
 }
 
 function stopTestKafka {
