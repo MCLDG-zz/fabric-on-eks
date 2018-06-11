@@ -376,6 +376,9 @@ function startKafka {
     if [[ "$ORDERER_TYPE" == "kafka" ]]; then
         log "Starting Kafa"
         ./$REPO/start-kafka.sh
+    else
+        #update the configtx.yaml with a blank Kafka broker external hostname
+        sed -e "s/%EXTERNALBROKER%/ /g" $SCRIPTS/gen-channel-artifacts-template.sh > $SCRIPTS/gen-channel-artifacts.sh
     fi
 }
 

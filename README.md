@@ -85,6 +85,12 @@ using the kubernetes-on-aws-quickstart repo: https://github.com/MCLDG/kubernetes
 
 Alternatively, you can use standard KOPS to create a cluster: https://github.com/kubernetes/kops
 
+OR, depending on your region, you can use EKS
+
+HOWERVER, you will need the EFS utils on each worker node to enable it to mount the EFS used to store the CA certs/keys.
+You can install this by SSH'ing into the worker node and running 'sudo yum install -y amazon-efs-utils'. Alternatively,
+depending on how you build the worker nodes, you could add this to userdata.
+
 ### Step 2: Create an EC2 instance and EFS 
 You will need an EC2 instance, which you will SSH into in order to start and test the Fabric network. You will 
 also need an EFS volume for storing common scripts and public keys. The EFS volume must be accessible from
@@ -882,7 +888,8 @@ Note: remove this prior to PROD as it can expose sensitive info in the peer logs
 
 ### Orderer crashes when using Kafka
 
-I could not get the Kafka orderer working - went back to Solo
+I could not get the Kafka orderer working - as soon as the peer tried to create a channel it would fail. I also
+used Kafka from repo : https://github.com/Yolean/kubernetes-kafka.git with tag: v4.1.0
 
 https://jira.hyperledger.org/browse/FAB-6250
 
@@ -899,6 +906,13 @@ runtime.throw(0xc72896, 0x2a)
 runtime.sigpanic()
 /opt/go/src/runtime/sigpanic_unix.go:12 +0x2cc
 
+```
+
+This turned out to be an issue with DNS. Fixed by adding the following ENV to peers and orderer:
+
+```
+          - name: GODEBUG
+            value: "netdns=go"
 ```
 
 ### Error when running 'peer channel fetch config'
