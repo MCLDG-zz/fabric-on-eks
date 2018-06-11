@@ -375,7 +375,7 @@ function startKafka {
     log "Checking whether to start Kafa. ORDERER_TYPE is $ORDERER_TYPE"
     if [[ "$ORDERER_TYPE" == "kafka" ]]; then
         log "Starting Kafa"
-        ./$REPO/start-kafka.sh
+#        ./$REPO/start-kafka.sh
     fi
 }
 

@@ -64,6 +64,11 @@ spec:
             value: '[/data/%ORG%-ca-chain.pem]'
           - name: ORDERER_GENERAL_TLS_CLIENTROOTCAS
             value: '[/data/%ORG%-ca-chain.pem]'
+          - name: ORDERER_KAFKA_VERBOSE
+            value: "true"
+          - name: ORDERER_KAFKA_VERSION
+            value: 1.0.1
+
          ports:
           - containerPort: 7050
          command: ["sh"]

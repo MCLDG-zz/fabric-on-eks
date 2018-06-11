@@ -18,7 +18,7 @@ ORDERER_ORGS="org0"
 ORDERER_DOMAINS="org0"
 
 #ORDERER_TYPE can be "kafka" or "solo"
-ORDERER_TYPE="solo"
+ORDERER_TYPE="kafka"
 
 
 #######################################################################
