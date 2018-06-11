@@ -45,7 +45,7 @@ function startStorageService {
 function startZookeeper {
     echo "Starting Zookeeper service"
     cd $HOME/$REPODIR
-    kubectl apply -f zookeeper/00namespace.yml
+    kubectl apply -f 00namespace.yml
     kubectl apply -f zookeeper/10zookeeper-config.yml
     kubectl apply -f zookeeper/20pzoo-service.yml
     kubectl apply -f zookeeper/21zoo-service.yml
