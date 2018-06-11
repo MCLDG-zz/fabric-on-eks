@@ -13,7 +13,7 @@ function main {
     startStorageService
     startZookeeper
     startKafka
-    testKafka
+#    testKafka
     whatsRunning
     echo "Setup of Kafka for Hyperledger Fabric on Kubernetes complete"
 }
