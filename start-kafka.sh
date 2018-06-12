@@ -69,7 +69,7 @@ function startExternalELB {
     #update 50kafka.yml with the hostname. This is used in the external Kafka broker address
     sed -e "s/%ELBHOSTNAME%/${ELBHOSTNAME}/g" kafka/50kafka.yml > kafka/50kafka-aws.yml
     #update the configtx.yaml with the Kafka broker external hostname. This is set in the script scripts/gen-channel-artifacts.sh
-#    sudo sed -e "s/%EXTERNALBROKER%/- ${ELBHOSTNAME}:9094/g" $SCRIPTS/gen-channel-artifacts-template.sh > $SCRIPTS/gen-channel-artifacts.sh
+    sudo sed -e "s/%EXTERNALBROKER%/- ${ELBHOSTNAME}:9094/g" $SCRIPTS/gen-channel-artifacts-template.sh > $SCRIPTS/gen-channel-artifacts.sh
 }
 
 function startKafka {

@@ -470,8 +470,10 @@ kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer2-org2.yaml
 kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer1-org2.yaml
 kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer2-org1.yaml
 kubectl delete -f fabric-on-eks/k8s/fabric-deployment-peer1-org1.yaml
-kubectl delete -f fabric-on-eks/k8s/fabric-deployment-orderer-org0.yaml
-kubectl delete -f fabric-on-eks/k8s/fabric-deployment-register-identities.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-orderer1-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-register-orderer-org0.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-register-peer-org1.yaml
+kubectl delete -f fabric-on-eks/k8s/fabric-deployment-register-peer-org2.yaml
 kubectl delete -f fabric-on-eks/k8s/fabric-deployment-channel-artifacts.yaml
 kubectl delete -f fabric-on-eks/k8s/fabric-deployment-ica-org0.yaml
 kubectl delete -f fabric-on-eks/k8s/fabric-deployment-ica-org1.yaml

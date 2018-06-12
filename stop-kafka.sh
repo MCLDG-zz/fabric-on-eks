@@ -20,6 +20,7 @@ function stopStorageService {
     cd $HOME/$REPODIR
     kubectl delete -f configure/aws-storageclass-broker-gp2.yml
     kubectl delete -f configure/aws-storageclass-zookeeper-gp2.yml
+    kubectl delete pvc --all -n kafka
 }
 
 function stopZookeeper {
