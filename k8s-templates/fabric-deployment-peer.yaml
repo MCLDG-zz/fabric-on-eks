@@ -21,6 +21,10 @@ spec:
        name: peer%NUM%-%ORG%
     spec:
      containers:
+       - name: couchdb
+         image: hyperledger/fabric-couchdb:x86_64-1.1.0-preview
+         ports:
+          - containerPort: 5984
        - name: peer%NUM%-%ORG%
          image: hyperledger/fabric-ca-peer:x86_64-1.1.0
          env:
