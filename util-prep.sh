@@ -57,4 +57,5 @@ function copyScripts {
     echo "Copying scripts folder from $REPO to $DATA"
     cd $HOME
     sudo cp $HOME/$REPO/scripts/* $DATA/rca-scripts/
+    sudo chmod 777 $DATA/rca-scripts/gen-channel-artifacts.sh
 }
