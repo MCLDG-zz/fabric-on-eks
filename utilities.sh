@@ -405,12 +405,12 @@ function startOrdererNLB {
       local COUNT=1
       getDomain $ORG
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
-        NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
-        NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
+        NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+        NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
         while [[ "${NLBHOSTNAME}" != *"elb"* ]]; do
             echo "Waiting on AWS to create NLB for Orderer. Hostname = ${NLBHOSTNAME}"
-            NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
-            NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
+            NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+            NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
         EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}- ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
