@@ -71,7 +71,8 @@ Profiles:
       # Orderer Type: The orderer implementation to start
       # Available types are \"solo\" and \"kafka\"
       OrdererType: $ORDERER_TYPE
-      Addresses:"
+      Addresses:
+        - %EXTERNALORDERER%"
 
    for ORG in $ORDERER_ORGS; do
       local COUNT=1

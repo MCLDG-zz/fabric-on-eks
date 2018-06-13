@@ -21,6 +21,7 @@ function main {
     startICA $HOME $REPO
     startRegisterOrderers $HOME $REPO
     startRegisterPeers $HOME $REPO
+    startOrdererNLB $HOME $REPO
     updateChannelArtifacts $HOME $REPO
     startOrderer $HOME $REPO
     startPeers $HOME $REPO

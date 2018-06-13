@@ -382,6 +382,45 @@ function startKafka {
     fi
 }
 
+function startOrdererNLB {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startOrdererNLB <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    echo "Starting Network Load Balancer service for Orderer"
+    for ORG in $ORDERER_ORGS; do
+      local COUNT=1
+      while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
+        kubectl apply -f $REPO/k8s/fabric-nlb-orderer$COUNT-$ORG.yaml
+        COUNT=$((COUNT+1))
+      done
+    done
+    confirmDeployments
+
+    #wait for service to be created and hostname to be available. This could take a few seconds
+    EXTERNALORDERERADDRESSES=''
+    for ORG in $ORDERER_ORGS; do
+      local COUNT=1
+      getDomain $ORG
+      while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
+        NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+        while [[ "${NLBHOSTNAME}" != *"elb"* ]]; do
+            echo "Waiting on AWS to create NLB for Orderer. Hostname = ${NLBHOSTNAME}"
+            NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+            sleep 10
+        done
+        EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}         - ${NLBHOSTNAME}\n"
+        COUNT=$((COUNT+1))
+      done
+    done
+    #update the configtx.yaml with the Orderer NLB external hostname. This is set in the script scripts/gen-channel-artifacts.sh
+    echo "Updating gen-channel-artifacts.sh with Orderer NLB endpoints: ${EXTERNALORDERERADDRESSES}"
+    sudo sed -e "s/%EXTERNALORDERER%/${EXTERNALORDERERADDRESSES}/g" $SCRIPTS/gen-channel-artifacts-template.sh > $SCRIPTS/gen-channel-artifacts.sh
+}
+
 function startOrderer {
     if [ $# -ne 2 ]; then
         echo "Usage: startOrderer <home-dir> <repo-name>"
