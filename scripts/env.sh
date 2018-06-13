@@ -20,6 +20,7 @@ ORDERER_DOMAINS="org0"
 #ORDERER_TYPE can be "kafka" or "solo"
 ORDERER_TYPE="kafka"
 EXTERNAL_ORDERER_ADDRESSES=""
+EXTERNAL_KAFKA_BROKER=""
 
 #######################################################################
 # Names of the peer organizations - REPLACE THIS ONCE I ADD OTHER ORGS

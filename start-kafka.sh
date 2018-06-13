@@ -60,16 +60,21 @@ function startExternalELB {
     kubectl apply -f kafka/elb.yml
     #wait for service to be created and hostname to be available. This could take a few seconds
     ELBHOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+    ELBHOSTPORT=$(kubectl get svc external-broker -n kafka -o jsonpath='{.spec.ports[*].port}')
     while [[ "${ELBHOSTNAME}" != *"elb"* ]]; do
         echo "Waiting on Kafka to create service. Hostname = ${ELBHOSTNAME}"
         ELBHOSTNAME=$(kubectl get svc external-broker -n kafka -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+        ELBHOSTPORT=$(kubectl get svc external-broker -n kafka -o jsonpath='{.spec.ports[*].port}')
         sleep 10
     done
-    echo "Updating 50kafka-aws.yml and ${SCRIPTS}/gen-channel-artifacts.sh with hostname: ${ELBHOSTNAME}"
+    echo "Updating 50kafka-aws.yml and ${SCRIPTS}/gen-channel-artifacts.sh with hostname: ${ELBHOSTNAME}:${ELBHOSTPORT}"
     #update 50kafka.yml with the hostname. This is used in the external Kafka broker address
-    sed -e "s/%ELBHOSTNAME%/${ELBHOSTNAME}/g" kafka/50kafka.yml > kafka/50kafka-aws.yml
-    #update the configtx.yaml with the Kafka broker external hostname. This is set in the script scripts/gen-channel-artifacts.sh
-    sudo sed -e "s/%EXTERNALBROKER%/- ${ELBHOSTNAME}:9094/g" $SCRIPTS/gen-channel-artifacts-template.sh > $SCRIPTS/gen-channel-artifacts.sh
+    sed -e "s/%ELBHOSTNAME%/${ELBHOSTNAME}:${ELBHOSTPORT}/g" kafka/50kafka.yml > kafka/50kafka-aws.yml
+    #update env.sh with the Kafka Broker external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
+    # add the broker name to configtx.yaml
+    echo "Updating env.sh with Kafka Broker endpoint: ${ELBHOSTNAME}"
+    sed -e "s/EXTERNAL_KAFKA_BROKER=\"\"/EXTERNAL_KAFKA_BROKER=\"${ELBHOSTNAME}:${ELBHOSTPORT}\"/g" -i $SCRIPTS/env.sh
+
 }
 
 function startKafka {
