@@ -414,7 +414,7 @@ function startOrdererNLB {
             NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
-        EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}         - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
+        EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}- ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
         COUNT=$((COUNT+1))
       done
     done
