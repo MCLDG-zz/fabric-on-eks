@@ -26,6 +26,7 @@ function main {
 }
 
 SDIR=$(dirname "$0")
+DATA=/opt/share/
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
 source $SDIR/utilities.sh
