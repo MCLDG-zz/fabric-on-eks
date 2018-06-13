@@ -43,7 +43,7 @@ DOMAINS="$ORDERER_DOMAINS $PEER_DOMAINS"
 ADMINCERTS=true
 
 # Number of Orderer nodes
-NUM_ORDERERS=1
+NUM_ORDERERS=2
 
 # The volume mount to share data between containers
 DATA=data
