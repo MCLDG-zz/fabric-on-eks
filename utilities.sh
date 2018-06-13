@@ -398,7 +398,6 @@ function startOrdererNLB {
         COUNT=$((COUNT+1))
       done
     done
-    confirmDeployments
 
     #wait for service to be created and hostname to be available. This could take a few seconds
     EXTERNALORDERERADDRESSES=''
