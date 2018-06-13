@@ -107,7 +107,7 @@ Profiles:
         # NOTE: Use IP:port notation
         Brokers:
           - broker.kafka:9092
-            $EXTERNAL_KAFKA_BROKER
+          $EXTERNAL_KAFKA_BROKER
 
       # Organizations is the list of orgs which are defined as participants on
       # the orderer side of the network
