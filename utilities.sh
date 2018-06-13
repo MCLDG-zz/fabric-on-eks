@@ -407,18 +407,21 @@ function startOrdererNLB {
       getDomain $ORG
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
         NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+        NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
         while [[ "${NLBHOSTNAME}" != *"elb"* ]]; do
             echo "Waiting on AWS to create NLB for Orderer. Hostname = ${NLBHOSTNAME}"
             NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+            NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG} -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
-        EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}         - ${NLBHOSTNAME}\n"
+        EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}         - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
         COUNT=$((COUNT+1))
       done
     done
-    #update the configtx.yaml with the Orderer NLB external hostname. This is set in the script scripts/gen-channel-artifacts.sh
-    echo "Updating gen-channel-artifacts.sh with Orderer NLB endpoints: ${EXTERNALORDERERADDRESSES}"
-    sudo sed -e "s/%EXTERNALORDERER%/${EXTERNALORDERERADDRESSES}/g" $SCRIPTS/gen-channel-artifacts-template.sh > $SCRIPTS/gen-channel-artifacts.sh
+    #update env.sh with the Orderer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
+    # add the hostnames to configtx.yaml
+    echo "Updating env.sh with Orderer NLB endpoints: ${EXTERNALORDERERADDRESSES}"
+    sed -e "s/EXTERNAL_ORDERER_ADDRESSES=""/EXTERNAL_ORDERER_ADDRESSES=\"${EXTERNALORDERERADDRESSES}\"/g" -i $SCRIPTS/env.sh
 }
 
 function startOrderer {

@@ -72,7 +72,7 @@ Profiles:
       # Available types are \"solo\" and \"kafka\"
       OrdererType: $ORDERER_TYPE
       Addresses:
-        - %EXTERNALORDERER%"
+        $EXTERNAL_ORDERER_ADDRESSES"
 
    for ORG in $ORDERER_ORGS; do
       local COUNT=1
