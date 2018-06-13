@@ -71,7 +71,8 @@ Profiles:
       # Orderer Type: The orderer implementation to start
       # Available types are \"solo\" and \"kafka\"
       OrdererType: $ORDERER_TYPE
-      Addresses:"
+      Addresses:
+        $EXTERNAL_ORDERER_ADDRESSES"
 
    for ORG in $ORDERER_ORGS; do
       local COUNT=1
@@ -106,6 +107,7 @@ Profiles:
         # NOTE: Use IP:port notation
         Brokers:
           - broker.kafka:9092
+            $EXTERNAL_KAFKA_BROKER
 
       # Organizations is the list of orgs which are defined as participants on
       # the orderer side of the network

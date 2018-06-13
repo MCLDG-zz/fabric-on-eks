@@ -73,7 +73,7 @@ function startExternalELB {
     #update env.sh with the Kafka Broker external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the broker name to configtx.yaml
     echo "Updating env.sh with Kafka Broker endpoint: ${ELBHOSTNAME}"
-    sed -e "s/EXTERNAL_KAFKA_BROKER=\"\"/EXTERNAL_KAFKA_BROKER=\"${ELBHOSTNAME}:${ELBHOSTPORT}\"/g" -i $SCRIPTS/env.sh
+    sed -e "s/EXTERNAL_KAFKA_BROKER=\"\"/EXTERNAL_KAFKA_BROKER=\"          - ${ELBHOSTNAME}:${ELBHOSTPORT}\"/g" -i $SCRIPTS/env.sh
 
 }
 
