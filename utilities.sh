@@ -421,7 +421,7 @@ function startOrdererNLB {
     #update env.sh with the Orderer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the hostnames to configtx.yaml
     echo "Updating env.sh with Orderer NLB endpoints: ${EXTERNALORDERERADDRESSES}"
-    sed -e "s/EXTERNAL_ORDERER_ADDRESSES=""/EXTERNAL_ORDERER_ADDRESSES=\"${EXTERNALORDERERADDRESSES}\"/g" -i $SCRIPTS/env.sh
+    sed -e "s/EXTERNAL_ORDERER_ADDRESSES=\"\"/EXTERNAL_ORDERER_ADDRESSES=\"${EXTERNALORDERERADDRESSES}\"/g" -i $SCRIPTS/env.sh
 }
 
 function startOrderer {
