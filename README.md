@@ -87,7 +87,7 @@ Alternatively, you can use standard KOPS to create a cluster: https://github.com
 
 OR, depending on your region, you can use EKS
 
-HOWERVER, you will need the EFS utils on each worker node to enable it to mount the EFS used to store the CA certs/keys.
+HOWEVER, you will need the EFS utils on each worker node to enable it to mount the EFS used to store the CA certs/keys.
 You can install this by SSH'ing into the worker node and running 'sudo yum install -y amazon-efs-utils'. Alternatively,
 depending on how you build the worker nodes, you could add this to userdata.
 
@@ -97,7 +97,7 @@ also need an EFS volume for storing common scripts and public keys. The EFS volu
 the Kubernetes cluster. Follow the steps below, which will create the EFS and make it available to the K8s cluster.
 
 Check the parameters in efs/deploy-ec2.sh and update them as follows:
-* The VPC and Subnet params should be those of your existing K8s cluster
+* The VPC and Subnet params should be those of your existing K8s cluster worker nodes
 * Keyname is an AWS EC2 keypair you own, that you have previously saved to your Mac. You'll need this to access the EC2 
 instance created by deploy-ec2.sh
 * VolumeName is the name assigned to your EFS volume
@@ -283,7 +283,8 @@ A peer connects to the orderer according to the following process:
 
 * The orderer URL and port is written in the configtx.yaml file, and encoded into the genesis block of a channel
 * The peer joins the channel and receives a copy of the genesis block, which contains the orderer endpoint and the TLS
-keys for the orderer
+cert for the orderer. The peer needs the genesis block (or channel config block) available, so it can execute:
+`peer channel join -b /$DATA/$CHANNEL_NAME.block`
 * The peer establishes a connection based on this information
 
 To establish this connection remotely, instead of within the K8s cluster, I do the following:
@@ -295,6 +296,31 @@ The peer should now be able to join the channel, which requires establishing a c
 
 I also changed this ENV variable in the fabric-deployment-orderer.yaml: ORDERER_HOST. This variable is used as the 
 host URL when generating the TLS cert for the orderer, so it's important it matches the URL the orderer is listening on.
+
+### Testing connection to remote peer
+
+The configtx.yaml is configured with a remote address. My `start-fabric.sh` script does this by creating an NLB for the 
+orderer, and updating env.sh with the NLB DNS. This then finds its way into configtx.yaml, and therefore into mychannel.block:
+
+Profiles:
+
+  OrgsOrdererGenesis:
+    Orderer:
+      # Orderer Type: The orderer implementation to start
+      # Available types are "solo" and "kafka"
+      OrdererType: kafka
+      Addresses:
+        - a350740ea6df511e88a810af1c0a30f8-5dfb744db3223cc4.elb.us-west-2.amazonaws.com:7050
+        - orderer1-org0.org0:7050
+
+In another AWS account, I follow the same steps as for a new Fabric network, though only steps 1-6 in this README. Then I execute
+`start-remote-peer.sh`. This will register and start peers, but not an orderer. The peer will start, but will not be joined to any 
+channels.
+
+Copy the mychannel.block from the original AWS account (it's in EFS, in /opt/share/rca-data/configtx.yaml) to the same location
+in the new account.
+
+To join the peer to the channel referenced in mychannel.block, follow the steps under `Restarting peers` above.
 
 ### temp commands
 
@@ -943,3 +969,49 @@ Logs in the load-fabric show the following:
 I guess this has something to do with how the user identity is setup in switchToUserIdentity. It sets up keys in
 the folder: /etc/hyperledger/fabric/orgs/org1/user/msp, but I guess some are missing. I worked around this by
 changing it to switchToAdminIdentity just before calling chaincodeQuery
+
+### Error in Orderer
+2018-06-12 03:27:38.279 UTC [common/deliver] deliverBlocks -> WARN 9b3 [channel: mychannel] Rejecting deliver request for 192.168.171.1:39054 because of consenter error
+2018-06-12 03:27:38.279 UTC [common/deliver] Handle -> DEBU 9b4 Waiting for new SeekInfo from 192.168.171.1:39054
+
+and
+
+2018-06-12 03:27:35.225 UTC [cauthdsl] deduplicate -> ERRO 92e Principal deserialization failure (the supplied identity is not valid: x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" while trying to verify candidate authority certificate "rca-org2-admin")) for identity 0a076f7267324d5
+
+
+This is caused by starting a new Fabric network, and it connecting to an existing Kafka cluster. This could either
+be a Kafka cluster that wasn't stopped, or where the PV and PVC were not deleted. To resolve this, stop the Kafka
+cluster and delete all the related PV and PVC
+
+### Remote peer in another AWS account, can't connect to Orderer due to cert mismatch
+fa5563726379.elb.us-west-2.amazonaws.com:7050 orderer1-org0.org0:7050 orderer2-org0.org0:7050 a6ae290186ef211e88a810af1c0a30f8-c3e639e28eedaf94.elb.us-west-2.amazonaws.com:7050]
+2018-06-13 12:05:09.165 UTC [deliveryClient] try -> WARN 426 Got error: Could not connect to any of the endpoints: [a6abc67696ef211e8834f06b86f026a6-58fdfa5563726379.elb.us-west-2.amazonaws.com:7050 orderer1-org0.org0:7050 orderer2-org0.org0:7050 a6ae290186ef211e88a810af1c0a30f8-c3e639e28eedaf94.elb.us-west-2.amazonaws.com:7050] , at 4 attempt. Retrying in 8s
+2018-06-13 12:05:20.167 UTC [ConnProducer] NewConnection -> ERRO 427 Failed connecting to orderer1-org0.org0:7050 , error: context deadline exceeded
+2018-06-13 12:05:20.425 UTC [ConnProducer] NewConnection -> ERRO 428 Failed connecting to a6ae290186ef211e88a810af1c0a30f8-c3e639e28eedaf94.elb.us-west-2.amazonaws.com:7050 , error: remote error: tls: bad certificate
+
+2018-06-13 12:12:31.370 UTC [deliveryClient] try -> WARN 42d Got error: Could not connect to any of the endpoints: [a6abc67696ef211e8834f06b86f026a6-58fdfa5563726379.elb.us-west-2.amazonaws.com:7050 orderer1-org0.org0:7050 a6ae290186ef211e88a810af1c0a30f8-c3e639e28eedaf94.elb.us-west-2.amazonaws.com:7050 orderer2-org0.org0:7050] , at 5 attempt. Retrying in 16s
+2018-06-13 12:12:50.371 UTC [ConnProducer] NewConnection -> ERRO 42e Failed connecting to orderer2-org0.org0:7050 , error: context deadline exceeded
+2018-06-13 12:12:50.536 UTC [ConnProducer] NewConnection -> ERRO 42f Failed connecting to a6abc67696ef211e8834f06b86f026a6-58fdfa5563726379.elb.us-west-2.amazonaws.com:7050 , error: x509: certificate is valid for orderer1-org0.org0, not a6abc67696ef211e8834f06b86f026a6-58fdfa5563726379.elb.us-west-2.amazonaws.com
+2018-06-13 12:12:53.537 UTC [ConnProducer] NewConnection -> ERRO 430 Failed connecting to a6ae290186ef211e88a810af1c0a30f8-c3e639e28eedaf94.elb.us-west-2.amazonaws.com:7050 , error: context deadline exceeded
+2018-06-13 12:12:56.538 UTC [ConnProducer] NewConnection -> ERRO 431 Failed connecting to orderer1-org0.org0:7050 , error: context deadline exceeded
+2018-06-13 12:12:56.538 UTC [deliveryClient] connect -> DEBU 432 Connected to
+2018-06-13 12:12:56.538 UTC [deliveryClient] connect -> ERRO 433 Failed obtaining connection: Could not connect to any of the endpoints: [orderer2-org0.org0:7050 a6abc67696ef211e8834f06b86f026a6-58fdfa5563726379.elb.us-west-2.amazonaws.com:7050 a6ae290186ef211e88a810af1c0a30f8-c3e639e28eedaf94.elb.us-west-2.amazonaws.com:7050 orderer1-org0.org0:7050]
+
+This is fixed by updating the fabric-deployment-orderer.yaml: ORDERER_HOST - the DNS name here should be the same as the NLB or Orderer endpoint.
+The TLS cert is generated based on this ENV variable. I think I can run two OSN's, one with a local DNS for local peers to connect to,
+and another with an NLB DNS for connection from remote peers.
+
+I had some issues getting this to work. Kept seeing errors such as 'bad certificate' above. I worked around this by turning off client TLS authentication
+in the remote peer:
+
+          - name: CORE_PEER_TLS_ENABLED
+            value: "true"
+          - name: CORE_PEER_TLS_CLIENTAUTHREQUIRED
+            value: "false"
+            
+and the same in the orderer:
+
+          - name: ORDERER_GENERAL_TLS_ENABLED
+            value: "true"
+          - name: ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED
+            value: "false"
