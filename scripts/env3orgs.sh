@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright 2018-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Copyright IBM Corp. All Rights Reserved.
 #
