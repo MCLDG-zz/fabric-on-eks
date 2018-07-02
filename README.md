@@ -1,83 +1,16 @@
-# Hyperledger Fabric CA on Kubernetes
+# Hyperledger Fabric on Kubernetes
 
-This is a port of the Hyperledger Fabric Samples fabric-ca component, running on Kubernetes.
+This repo allows you to build two types of Hyperledger networks:
 
-See: https://github.com/hyperledger/fabric-samples/tree/v1.1.0/fabric-ca
+* A POC network, consisting of an orderer organisation and two peer organisations, running in a single Kubernetes cluster
+in a single AWS account. This is suitable for POC's, or for testing/learning
+* A PROD network, consisting of an orderer organisation running in one Kubernetes cluster in one AWS account, and separate
+peer organisations running in separate AWS accounts. This resembles a production-ready Hyperledger network where remote
+peers from different organisations connect to the network
 
-## TODO
-* Use a DB to store metadata, such as which version of CC is installed, which peers and orgs exist, etc.
-* Split test-fabric.sh into separate scripts. Simulate a real network where each peer will execute its own commands
-* Deploy the peers in different VPCs to simulate real-world scenario
-* Use CouchDB
-* Test with Kafka. I had a quick test, saw errors and moved on
-* Remove the dependency on a shared /data directory for the certificates
-* remove an org as a member of the network
-* replace the temp files created in start-addorgs.sh with an event based mechanism
-* actually - perhaps using K8s jobs would be a better way to create and delete an org???
-* change the channel-artifacts pod to a job instead of a pod
-* I've tested with orgs/domains that are the same. Use a different domain name. I'm sure in some places I'm using ORG
-instead of DOMAIN. When they differ I'll probably see issues
-* check if org has already joined Fabric network. If so, do not continue joining
-* sort out the port numbers assigned - they are assigned in order to the ORGS or PEER_ORGS array. After adding/deleting
-orgs though, the order becomes mixed up and we end up assigning port numbers to new orgs that are used by existing orgs
+Regardless of whether you are creating a POC or PROD environment, you'll need to do steps 1-7 below.
 
-When I do 'start-addorg.sh', it should add org3. However, addorg-fabric-setup.sh gives the following message, and
-does not add org3. How come???
-Org 'org3' already exists in the channel config - I will cleanup but will not attempt to update the channel config
-
-## TODO - handle this error
-Peer attempts to join channel, fails, but still returns a successful message. Later testing shows it has not joined the channel
-
-##### 2018-05-04 05:47:41 Peer peer1-org3.org3 is attempting to join channel 'mychannel' (attempt #1) ...
-output of peer channel join is '2018-05-04 05:47:41.183 UTC [msp] GetLocalMSP -> DEBU 001 Returning existing local MSP
-2018-05-04 05:47:41.183 UTC [msp] GetDefaultSigningIdentity -> DEBU 002 Obtaining default signing identity
-2018-05-04 05:47:41.207 UTC [grpc] Printf -> DEBU 003 grpc: addrConn.resetTransport failed to create client transport: connection error: desc = "transport: Error while dialing dial tcp 100.66.222.193:7051: getsockopt: connection refused"; Reconnecting to {peer1-org3.org3:7051 <nil>}
-2018-05-04 05:47:42.208 UTC [grpc] Printf -> DEBU 004 grpc: addrConn.resetTransport failed to create client transport: connection error: desc = "transport: Error while dialing dial tcp 100.66.222.193:7051: getsockopt: connection refused"; Reconnecting to {peer1-org3.org3:7051 <nil>}
-2018-05-04 05:47:43.759 UTC [grpc] Printf -> DEBU 005 grpc: addrConn.resetTransport failed to create client transport: connection error: desc = "transport: Error while dialing dial tcp 100.66.222.193:7051: getsockopt: connection refused"; Reconnecting to {peer1-org3.org3:7051 <nil>}
-Error: Error getting endorser client channel: endorser client failed to connect to peer1-org3.org3:7051: failed to create new connection: context deadline exceeded
-Usage:
-  peer channel join [flags]
-
-Flags:
-  -b, --blockpath string   Path to file containing genesis block
-
-Global Flags:
-      --cafile string                       Path to file containing PEM-encoded trusted certificate(s) for the ordering endpoint
-      --certfile string                     Path to file containing PEM-encoded X509 public key to use for mutual TLS communication with the orderer endpoint
-      --clientauth                          Use mutual TLS when communicating with the orderer endpoint
-      --keyfile string                      Path to file containing PEM-encoded private key to use for mutual TLS communication with the orderer endpoint
-      --logging-level string                Default logging level and overrides, see core.yaml for full syntax
-  -o, --orderer string                      Ordering service endpoint
-      --ordererTLSHostnameOverride string   The hostname override to use when validating the TLS connection to the orderer.
-      --tls                                 Use TLS when communicating with the orderer endpoint
-  -v, --version                             Display current version of fabric peer server'
-##### 2018-05-04 05:47:44 Peer peer1-org3.org3 successfully joined channel 'mychannel'
-
-## TODO - handle this error
-Gossip is doing some strange. I add org3, then I delete org3. After this I see the following messages. It seems as though messages are being
-gossiped from a peer that can't be identified. Or, Gossip is gossiping the network state and sending information about dead peers. Need to research
-how the network state is updated to gossip - i.e. if I remove an org, how does Gossip know?
-
-2018-05-07 08:00:00.654 UTC [endorser] ProcessProposal -> DEBU 168bd Exit: request from%!(EXTRA string=100.96.4.227:43736)
-2018-05-07 08:00:00.903 UTC [peer/gossip/sa] OrgByPeerIdentity -> WARN 168be Peer Identity [0a 07 6f 72 67 33 4d 53 50 12 f5 07 2d 2d 2d 2d 2d 42 45 47 49 4e 20 43 45 52 54 49 46 49 43 41 54 45 2d 2d 2d 2d 2d 0a 4d 49 49 43 77 44 43 43 41 6d 61 67 41 77 49 42 41 67 49 55 63 47 35 45 6c 76 6b 6d 2f 44 59 2f 4e 46 65 67 71 35 4e 5a 54 79 38 57 30 66 59 77 43 67 59 49 4b 6f 5a 49 7a 6a 30 45 41 77 49 77 0a 5a 6a 45 4c 4d 41 6b 47 41 31 55 45 42 68 4d 43 56 56 4d 78 46 7a 41 56 42 67 4e 56 42 41 67 54 44 6b 35 76 63 6e 52 6f 49 45 4e 68 63 6d 39 73 61 57 35 68 4d 52 51 77 45 67 59 44 56 51 51 4b 0a 45 77 74 49 65 58 42 6c 63 6d 78 6c 5a 47 64 6c 63 6a 45 50 4d 41 30 47 41 31 55 45 43 78 4d 47 59 32 78 70 5a 57 35 30 4d 52 63 77 46 51 59 44 56 51 51 44 45 77 35 79 59 32 45 74 62 33 4a 6e 0a 4d 79 31 68 5a 47 31 70 62 6a 41 65 46 77 30 78 4f 44 41 31 4d 44 63 77 4e 7a 49 31 4d 44 42 61 46 77 30 78 4f 54 41 31 4d 44 63 77 4e 7a 4d 77 4d 44 42 61 4d 47 30 78 43 7a 41 4a 42 67 4e 56 0a 42 41 59 54 41 6c 56 54 4d 52 63 77 46 51 59 44 56 51 51 49 45 77 35 4f 62 33 4a 30 61 43 42 44 59 58 4a 76 62 47 6c 75 59 54 45 55 4d 42 49 47 41 31 55 45 43 68 4d 4c 53 48 6c 77 5a 58 4a 73 0a 5a 57 52 6e 5a 58 49 78 47 6a 41 4c 42 67 4e 56 42 41 73 54 42 48 42 6c 5a 58 49 77 43 77 59 44 56 51 51 4c 45 77 52 76 63 6d 63 78 4d 52 4d 77 45 51 59 44 56 51 51 44 45 77 70 77 5a 57 56 79 0a 4d 69 31 76 63 6d 63 7a 4d 46 6b 77 45 77 59 48 4b 6f 5a 49 7a 6a 30 43 41 51 59 49 4b 6f 5a 49 7a 6a 30 44 41 51 63 44 51 67 41 45 41 71 7a 79 37 44 6e 34 4e 78 45 4d 46 67 34 7a 4a 63 34 30 0a 2f 57 2b 36 31 6d 6a 50 6a 50 6b 42 6a 42 33 31 61 31 48 36 7a 6c 48 6c 66 75 32 75 73 69 42 52 6f 67 55 6c 30 77 79 65 56 76 67 30 7a 52 6d 4b 71 54 4e 34 68 75 62 68 62 7a 59 35 4a 78 4e 69 0a 4c 4b 4f 42 36 6a 43 42 35 7a 41 4f 42 67 4e 56 48 51 38 42 41 66 38 45 42 41 4d 43 42 34 41 77 44 41 59 44 56 52 30 54 41 51 48 2f 42 41 49 77 41 44 41 64 42 67 4e 56 48 51 34 45 46 67 51 55 0a 42 6c 46 4a 36 6e 2f 53 4c 6a 41 76 64 37 35 45 6c 4b 44 52 4d 61 58 53 2f 34 34 77 48 77 59 44 56 52 30 6a 42 42 67 77 46 6f 41 55 61 2b 67 76 66 6f 69 36 4f 74 59 39 6b 42 5a 73 6c 6f 6e 41 0a 4b 45 41 70 6a 32 34 77 4a 67 59 44 56 52 30 52 42 42 38 77 48 59 49 62 63 47 56 6c 63 6a 49 74 62 33 4a 6e 4d 79 30 33 5a 44 67 31 4e 7a 64 6a 5a 6a 52 6d 4c 58 52 75 63 6d 74 6f 4d 46 38 47 0a 43 43 6f 44 42 41 55 47 42 77 67 42 42 46 4e 37 49 6d 46 30 64 48 4a 7a 49 6a 70 37 49 6d 68 6d 4c 6b 46 6d 5a 6d 6c 73 61 57 46 30 61 57 39 75 49 6a 6f 69 62 33 4a 6e 4d 53 49 73 49 6d 68 6d 0a 4c 6b 56 75 63 6d 39 73 62 47 31 6c 62 6e 52 4a 52 43 49 36 49 6e 42 6c 5a 58 49 79 4c 57 39 79 5a 7a 4d 69 4c 43 4a 6f 5a 69 35 55 65 58 42 6c 49 6a 6f 69 63 47 56 6c 63 69 4a 39 66 54 41 4b 0a 42 67 67 71 68 6b 6a 4f 50 51 51 44 41 67 4e 49 41 44 42 46 41 69 45 41 35 32 78 4f 2f 5a 45 6d 73 5a 2b 36 48 69 6c 66 6f 65 48 68 70 51 6f 6f 49 6f 7a 62 56 4c 6b 2f 5a 6a 4b 52 55 62 65 72 0a 6b 75 73 43 49 46 58 58 32 68 79 59 6a 79 6d 55 56 45 52 36 37 71 37 31 6d 31 32 78 49 32 30 46 61 64 71 31 4c 7a 67 37 38 70 4e 4a 6b 6f 4d 2b 0a 2d 2d 2d 2d 2d 45 4e 44 20 43 45 52 54 49 46 49 43 41 54 45 2d 2d 2d 2d 2d 0a] cannot be desirialized. No MSP found able to do that.
-2018-05-07 08:00:00.907 UTC [gossip/gossip] func3 -> WARN 168bf Failed determining organization of [26 58 18 29 202 180 156 78 216 93 10 161 163 196 179 107 97 154 194 136 34 119 134 210 92 50 30 83 103 141 253 117]
-2018-05-07 08:00:01.394 UTC [blocksProvider] DeliverBlocks -> DEBU 168c0 [mychannel] Adding payload locally, buffer seqNum = [209], peers number [3]
-
-
-## Done
-* Script the start/stop of the fabric network. Include in the script ways to check that each component starts/stops
-as expected before moving on to the next stage - done. See start-fabric.sh
-* Script the creation of the deployment.yamls so that they are created based on the number of orderers/peers
-defined in env.sh, rather than being hardcoded - done. See gen-fabric.sh
-* Use Kafka as orderer instead of solo - I have setup this, but could not get it to work. See troublshooting section
-* Add a new org as a member of the network
-* In start-addorgs.sh, we should also add the new org as an endorser. This requires a change to the endorsement
-   policy, which necessitates a 'peer chaincode upgrade'. This will execute system chaincode
-   and add a new block to the channel reflecting the addition of the new org to the endorsement policy.
-   http://hyperledger-fabric.readthedocs.io/en/release-1.1/channel_update_tutorial.html
-
-
-## Getting Started
+## Getting Started - common steps for POC & PROD options
 
 ### Step 1: Create a Kubernetes cluster
 You need a K8s cluster to start. You can create a cluster with logging and monitoring already enabled
@@ -165,7 +98,22 @@ Step 2. You can obtain the EFS URL from the EFS console. The URL should look som
 EFSSERVER=fs-12a33ebb.efs.us-west-2.amazonaws.com
 ```
 
-### Step 6: Generate the Kubernetes YAML files
+### Step 6: Edit env.sh
+On the EC2 instance created in Step 2 above, in the newly cloned fabric-on-eks directory, update the script 
+'scripts/env.sh' as follows:
+ 
+* Set FABRIC_NETWORK_TYPE  to either "POC" or "PROD", depending on whether you want to build a POC or a PROD network.
+    * A POC network, consisting of an orderer organisation and two peer organisations, running in a single Kubernetes cluster
+      in a single AWS account. This is suitable for POC's, or for testing/learning
+    * A PROD network, consisting of an orderer organisation running in one Kubernetes cluster in one AWS account, and separate
+      peer organisations running in separate AWS accounts. This resembles a production-ready Hyperledger network where remote
+      peers from different organisations connect to the network
+
+* Change the names and domains or the peer and orderer orgs/domains to match the names you choose.
+* Select either "kafka" or "solo" for the ORDERER_TYPE
+
+
+### Step 7: Generate the Kubernetes YAML files
 On the EC2 instance created in Step 2 above:
 
 ```bash
@@ -179,8 +127,7 @@ then, in the home directory:
 cd fabric-on-eks
 ./gen-fabric.sh
 ```
-
-### Step 7: Start the fabric network
+### Step 8: Start the fabric network
 On the EC2 instance created in Step 2 above, in the home directory:
 
 ```bash
@@ -188,7 +135,7 @@ cd fabric-on-eks
 ./start-fabric.sh
 ```
 
-### Step 8: Confirm the test cases ran successfully
+### Step 9: Confirm the test cases ran successfully
 The test cases are run by deploying 'fabric-deployment-test-fabric.yaml', which executes the script 'test-fabric.sh'.
 This will run in the org1 namespace, and will act as a Fabric client.
 
@@ -210,6 +157,24 @@ The final 3 lines of the log file should look as follows:
 ##### 2018-04-16 09:08:02 Expected error occurred when the revoked user 'user-org1' queried the chaincode in the channel 'mychannel'
 ##### 2018-04-16 09:08:02 Congratulations! The tests ran successfully.
 ```
+
+If you've completed all these steps, you will have a POC network running. If you would like to connect remote peers to 
+this network, continue with the steps below.
+
+## Getting Started - additional steps for building a PROD network
+Adding a new organisation to an existing Fabric network involves a number of steps:
+* 
+
+### Step 10: Repeat steps 1-7 in a different AWS account
+On the EC2 instance created in Step 2 above, in the home directory:
+
+```bash
+cd fabric-on-eks
+./start-fabric.sh
+```
+
+
+
 ### Step 9: Adding a new org
 Execute the script 'start-addorgs.sh'. This does the following:
 
@@ -1015,3 +980,80 @@ and the same in the orderer:
             value: "true"
           - name: ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED
             value: "false"
+            
+## TODO
+* Use a DB to store metadata, such as which version of CC is installed, which peers and orgs exist, etc.
+* Split test-fabric.sh into separate scripts. Simulate a real network where each peer will execute its own commands
+* Deploy the peers in different VPCs to simulate real-world scenario
+* Use CouchDB
+* Test with Kafka. I had a quick test, saw errors and moved on
+* Remove the dependency on a shared /data directory for the certificates
+* remove an org as a member of the network
+* replace the temp files created in start-addorgs.sh with an event based mechanism
+* actually - perhaps using K8s jobs would be a better way to create and delete an org???
+* change the channel-artifacts pod to a job instead of a pod
+* I've tested with orgs/domains that are the same. Use a different domain name. I'm sure in some places I'm using ORG
+instead of DOMAIN. When they differ I'll probably see issues
+* check if org has already joined Fabric network. If so, do not continue joining
+* sort out the port numbers assigned - they are assigned in order to the ORGS or PEER_ORGS array. After adding/deleting
+orgs though, the order becomes mixed up and we end up assigning port numbers to new orgs that are used by existing orgs
+
+When I do 'start-addorg.sh', it should add org3. However, addorg-fabric-setup.sh gives the following message, and
+does not add org3. How come???
+Org 'org3' already exists in the channel config - I will cleanup but will not attempt to update the channel config
+
+## TODO - handle this error
+Peer attempts to join channel, fails, but still returns a successful message. Later testing shows it has not joined the channel
+
+##### 2018-05-04 05:47:41 Peer peer1-org3.org3 is attempting to join channel 'mychannel' (attempt #1) ...
+output of peer channel join is '2018-05-04 05:47:41.183 UTC [msp] GetLocalMSP -> DEBU 001 Returning existing local MSP
+2018-05-04 05:47:41.183 UTC [msp] GetDefaultSigningIdentity -> DEBU 002 Obtaining default signing identity
+2018-05-04 05:47:41.207 UTC [grpc] Printf -> DEBU 003 grpc: addrConn.resetTransport failed to create client transport: connection error: desc = "transport: Error while dialing dial tcp 100.66.222.193:7051: getsockopt: connection refused"; Reconnecting to {peer1-org3.org3:7051 <nil>}
+2018-05-04 05:47:42.208 UTC [grpc] Printf -> DEBU 004 grpc: addrConn.resetTransport failed to create client transport: connection error: desc = "transport: Error while dialing dial tcp 100.66.222.193:7051: getsockopt: connection refused"; Reconnecting to {peer1-org3.org3:7051 <nil>}
+2018-05-04 05:47:43.759 UTC [grpc] Printf -> DEBU 005 grpc: addrConn.resetTransport failed to create client transport: connection error: desc = "transport: Error while dialing dial tcp 100.66.222.193:7051: getsockopt: connection refused"; Reconnecting to {peer1-org3.org3:7051 <nil>}
+Error: Error getting endorser client channel: endorser client failed to connect to peer1-org3.org3:7051: failed to create new connection: context deadline exceeded
+Usage:
+  peer channel join [flags]
+
+Flags:
+  -b, --blockpath string   Path to file containing genesis block
+
+Global Flags:
+      --cafile string                       Path to file containing PEM-encoded trusted certificate(s) for the ordering endpoint
+      --certfile string                     Path to file containing PEM-encoded X509 public key to use for mutual TLS communication with the orderer endpoint
+      --clientauth                          Use mutual TLS when communicating with the orderer endpoint
+      --keyfile string                      Path to file containing PEM-encoded private key to use for mutual TLS communication with the orderer endpoint
+      --logging-level string                Default logging level and overrides, see core.yaml for full syntax
+  -o, --orderer string                      Ordering service endpoint
+      --ordererTLSHostnameOverride string   The hostname override to use when validating the TLS connection to the orderer.
+      --tls                                 Use TLS when communicating with the orderer endpoint
+  -v, --version                             Display current version of fabric peer server'
+##### 2018-05-04 05:47:44 Peer peer1-org3.org3 successfully joined channel 'mychannel'
+
+## TODO - handle this error
+Gossip is doing some strange. I add org3, then I delete org3. After this I see the following messages. It seems as though messages are being
+gossiped from a peer that can't be identified. Or, Gossip is gossiping the network state and sending information about dead peers. Need to research
+how the network state is updated to gossip - i.e. if I remove an org, how does Gossip know?
+
+2018-05-07 08:00:00.654 UTC [endorser] ProcessProposal -> DEBU 168bd Exit: request from%!(EXTRA string=100.96.4.227:43736)
+2018-05-07 08:00:00.903 UTC [peer/gossip/sa] OrgByPeerIdentity -> WARN 168be Peer Identity [0a 07 6f 72 67 33 4d 53 50 12 f5 07 2d 2d 2d 2d 2d 42 45 47 49 4e 20 43 45 52 54 49 46 49 43 41 54 45 2d 2d 2d 2d 2d 0a 4d 49 49 43 77 44 43 43 41 6d 61 67 41 77 49 42 41 67 49 55 63 47 35 45 6c 76 6b 6d 2f 44 59 2f 4e 46 65 67 71 35 4e 5a 54 79 38 57 30 66 59 77 43 67 59 49 4b 6f 5a 49 7a 6a 30 45 41 77 49 77 0a 5a 6a 45 4c 4d 41 6b 47 41 31 55 45 42 68 4d 43 56 56 4d 78 46 7a 41 56 42 67 4e 56 42 41 67 54 44 6b 35 76 63 6e 52 6f 49 45 4e 68 63 6d 39 73 61 57 35 68 4d 52 51 77 45 67 59 44 56 51 51 4b 0a 45 77 74 49 65 58 42 6c 63 6d 78 6c 5a 47 64 6c 63 6a 45 50 4d 41 30 47 41 31 55 45 43 78 4d 47 59 32 78 70 5a 57 35 30 4d 52 63 77 46 51 59 44 56 51 51 44 45 77 35 79 59 32 45 74 62 33 4a 6e 0a 4d 79 31 68 5a 47 31 70 62 6a 41 65 46 77 30 78 4f 44 41 31 4d 44 63 77 4e 7a 49 31 4d 44 42 61 46 77 30 78 4f 54 41 31 4d 44 63 77 4e 7a 4d 77 4d 44 42 61 4d 47 30 78 43 7a 41 4a 42 67 4e 56 0a 42 41 59 54 41 6c 56 54 4d 52 63 77 46 51 59 44 56 51 51 49 45 77 35 4f 62 33 4a 30 61 43 42 44 59 58 4a 76 62 47 6c 75 59 54 45 55 4d 42 49 47 41 31 55 45 43 68 4d 4c 53 48 6c 77 5a 58 4a 73 0a 5a 57 52 6e 5a 58 49 78 47 6a 41 4c 42 67 4e 56 42 41 73 54 42 48 42 6c 5a 58 49 77 43 77 59 44 56 51 51 4c 45 77 52 76 63 6d 63 78 4d 52 4d 77 45 51 59 44 56 51 51 44 45 77 70 77 5a 57 56 79 0a 4d 69 31 76 63 6d 63 7a 4d 46 6b 77 45 77 59 48 4b 6f 5a 49 7a 6a 30 43 41 51 59 49 4b 6f 5a 49 7a 6a 30 44 41 51 63 44 51 67 41 45 41 71 7a 79 37 44 6e 34 4e 78 45 4d 46 67 34 7a 4a 63 34 30 0a 2f 57 2b 36 31 6d 6a 50 6a 50 6b 42 6a 42 33 31 61 31 48 36 7a 6c 48 6c 66 75 32 75 73 69 42 52 6f 67 55 6c 30 77 79 65 56 76 67 30 7a 52 6d 4b 71 54 4e 34 68 75 62 68 62 7a 59 35 4a 78 4e 69 0a 4c 4b 4f 42 36 6a 43 42 35 7a 41 4f 42 67 4e 56 48 51 38 42 41 66 38 45 42 41 4d 43 42 34 41 77 44 41 59 44 56 52 30 54 41 51 48 2f 42 41 49 77 41 44 41 64 42 67 4e 56 48 51 34 45 46 67 51 55 0a 42 6c 46 4a 36 6e 2f 53 4c 6a 41 76 64 37 35 45 6c 4b 44 52 4d 61 58 53 2f 34 34 77 48 77 59 44 56 52 30 6a 42 42 67 77 46 6f 41 55 61 2b 67 76 66 6f 69 36 4f 74 59 39 6b 42 5a 73 6c 6f 6e 41 0a 4b 45 41 70 6a 32 34 77 4a 67 59 44 56 52 30 52 42 42 38 77 48 59 49 62 63 47 56 6c 63 6a 49 74 62 33 4a 6e 4d 79 30 33 5a 44 67 31 4e 7a 64 6a 5a 6a 52 6d 4c 58 52 75 63 6d 74 6f 4d 46 38 47 0a 43 43 6f 44 42 41 55 47 42 77 67 42 42 46 4e 37 49 6d 46 30 64 48 4a 7a 49 6a 70 37 49 6d 68 6d 4c 6b 46 6d 5a 6d 6c 73 61 57 46 30 61 57 39 75 49 6a 6f 69 62 33 4a 6e 4d 53 49 73 49 6d 68 6d 0a 4c 6b 56 75 63 6d 39 73 62 47 31 6c 62 6e 52 4a 52 43 49 36 49 6e 42 6c 5a 58 49 79 4c 57 39 79 5a 7a 4d 69 4c 43 4a 6f 5a 69 35 55 65 58 42 6c 49 6a 6f 69 63 47 56 6c 63 69 4a 39 66 54 41 4b 0a 42 67 67 71 68 6b 6a 4f 50 51 51 44 41 67 4e 49 41 44 42 46 41 69 45 41 35 32 78 4f 2f 5a 45 6d 73 5a 2b 36 48 69 6c 66 6f 65 48 68 70 51 6f 6f 49 6f 7a 62 56 4c 6b 2f 5a 6a 4b 52 55 62 65 72 0a 6b 75 73 43 49 46 58 58 32 68 79 59 6a 79 6d 55 56 45 52 36 37 71 37 31 6d 31 32 78 49 32 30 46 61 64 71 31 4c 7a 67 37 38 70 4e 4a 6b 6f 4d 2b 0a 2d 2d 2d 2d 2d 45 4e 44 20 43 45 52 54 49 46 49 43 41 54 45 2d 2d 2d 2d 2d 0a] cannot be desirialized. No MSP found able to do that.
+2018-05-07 08:00:00.907 UTC [gossip/gossip] func3 -> WARN 168bf Failed determining organization of [26 58 18 29 202 180 156 78 216 93 10 161 163 196 179 107 97 154 194 136 34 119 134 210 92 50 30 83 103 141 253 117]
+2018-05-07 08:00:01.394 UTC [blocksProvider] DeliverBlocks -> DEBU 168c0 [mychannel] Adding payload locally, buffer seqNum = [209], peers number [3]
+
+
+## Done
+* Script the start/stop of the fabric network. Include in the script ways to check that each component starts/stops
+as expected before moving on to the next stage - done. See start-fabric.sh
+* Script the creation of the deployment.yamls so that they are created based on the number of orderers/peers
+defined in env.sh, rather than being hardcoded - done. See gen-fabric.sh
+* Use Kafka as orderer instead of solo - I have setup this, but could not get it to work. See troublshooting section
+* Add a new org as a member of the network
+* In start-addorgs.sh, we should also add the new org as an endorser. This requires a change to the endorsement
+   policy, which necessitates a 'peer chaincode upgrade'. This will execute system chaincode
+   and add a new block to the channel reflecting the addition of the new org to the endorsement policy.
+   http://hyperledger-fabric.readthedocs.io/en/release-1.1/channel_update_tutorial.html
+
+### Humble beginnings            
+This repo started life as a port of the Hyperledger Fabric Samples fabric-ca component, found in the Fabric Samples, here:
+
+See: https://github.com/hyperledger/fabric-samples/tree/v1.1.0/fabric-ca

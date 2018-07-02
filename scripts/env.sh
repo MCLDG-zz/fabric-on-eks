@@ -6,35 +6,42 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-#
+#####################################################################################
 # The following variables describe the topology and may be modified to provide
 # different organization names or the number of peers in each peer organization.
-#
+#####################################################################################
 
-# Name of the docker-compose network
-NETWORK=fabric-ca
+# Type of network. Options are: POC or PROD
+FABRIC_NETWORK_TYPE="POC"
 
-# Names of the Orderer organizations
+# Names of the Orderer organizations. Regardless of the FABRIC_NETWORK_TYPE there will be a single
+# Orderer org. You may change the names of the ORG and DOMAIN to match your organisation
 ORDERER_ORGS="org0"
 ORDERER_DOMAINS="org0"
 
-#ORDERER_TYPE can be "kafka" or "solo"
+# ORDERER_TYPE can be "kafka" or "solo". If you set this to Kafka, a Kafka/Zookeeper cluster will be created in
+# the same AWS account as the orderer. Otherwise, you may choose 'solo'
 ORDERER_TYPE="kafka"
-EXTERNAL_ORDERER_ADDRESSES=""
-EXTERNAL_KAFKA_BROKER=""
 
-#######################################################################
-# Names of the peer organizations - REPLACE THIS ONCE I ADD OTHER ORGS
-#######################################################################
+# Names of the peer organizations.
+# If FABRIC_NETWORK_TYPE="POC" I will generate as many organisations as you enter here. Each organisation will correspond
+# to a Kubernetes namespace, and within the namespace I will run the number of peers specified by NUM_PEERS.
+# If FABRIC_NETWORK_TYPE="PROD" only include one organisation here. I will generate one Kubernetes namespace, and within
+# the namespace I will run the number of peers specified by NUM_PEERS. For a PROD network I expect the other organisations
+# to be remote, and to execute in separate AWS Accounts. Therefore only use one organisation here
 PEER_ORGS="org1 org2"
 PEER_DOMAINS="org1 org2"
 
 # Number of peers in each peer organization
 NUM_PEERS=2
 
-#
+#####################################################################################
 # The remainder of this file contains variables which typically would not be changed.
-#
+#####################################################################################
+
+# Leave these blank. They are populated by other scripts
+EXTERNAL_ORDERER_ADDRESSES=""
+EXTERNAL_KAFKA_BROKER=""
 
 # All org names
 ORGS="$ORDERER_ORGS $PEER_ORGS"
