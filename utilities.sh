@@ -375,8 +375,8 @@ function startRegisterPeers {
     log "Registering Fabric Peers"
     for ORG in $PEER_ORGS; do
          kubectl apply -f $REPO/k8s/fabric-deployment-register-peer-$ORG.yaml
-   done
-   confirmDeployments
+    done
+    confirmDeployments
 }
 
 function startKafka {

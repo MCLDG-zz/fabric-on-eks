@@ -110,7 +110,9 @@ On the EC2 instance created in Step 2 above, in the newly cloned fabric-on-eks d
       peers from different organisations connect to the network
 
 * Change the names and domains or the peer and orderer orgs/domains to match the names you choose.
-* Select either "kafka" or "solo" for the ORDERER_TYPE
+* Select either "kafka" or "solo" for the ORDERER_TYPE. Make sure you select 'kafka' if you want to build a PROD network.
+This is because the remote peers need to connect to an OSN (orderer service node). With Kafka we can run multiple OSN's, 
+and have one OSN that exposes an external IP for connection from the remote peer.
 
 
 ### Step 7: Generate the Kubernetes YAML files
