@@ -452,7 +452,7 @@ function startAnchorPeerNLB {
     done
 
     #wait for service to be created and hostname to be available. This could take a few seconds
-    EXTERNALANCHORPEERADDRESSES=()
+    EXTERNALANCHORPEERADDRESSES=""
     for ORG in $PEER_ORGS; do
         getDomain $ORG
         NLBHOSTNAME=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
@@ -463,13 +463,13 @@ function startAnchorPeerNLB {
             NLBHOSTPORT=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
-        EXTERNALANCHORPEERADDRESSES=( "${EXTERNALANCHORPEERADDRESSES[@]}" "${NLBHOSTNAME}:${NLBHOSTPORT}" )
+        EXTERNALANCHORPEERADDRESSES="${EXTERNALANCHORPEERADDRESSES} ${NLBHOSTNAME}:${NLBHOSTPORT}"
         echo "adding ${NLBHOSTNAME}:${NLBHOSTPORT} to EXTERNALANCHORPEERADDRESSES: ${EXTERNALANCHORPEERADDRESSES}"
     done
     #update env.sh with the Anchor Peer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the hostnames to configtx.yaml
     echo "Updating env.sh with Anchor Peer NLB endpoints: ${EXTERNALANCHORPEERADDRESSES}"
-    sed -e "s/EXTERNAL_ANCHOR_PEER_ADDRESSES=\"\"/EXTERNAL_ANCHOR_PEER_ADDRESSES=\"${EXTERNALANCHORPEERADDRESSES[*]}\"/g" -i $SCRIPTS/env.sh
+    sed -e "s/EXTERNAL_ANCHOR_PEER_ADDRESSES=\"\"/EXTERNAL_ANCHOR_PEER_ADDRESSES=\"${EXTERNALANCHORPEERADDRESSES}\"/g" -i $SCRIPTS/env.sh
 }
 
 function startOrderer {
