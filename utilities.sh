@@ -464,6 +464,7 @@ function startAnchorPeerNLB {
             sleep 10
         done
         EXTERNALANCHORPEERADDRESSES+=(${NLBHOSTNAME}:${NLBHOSTPORT})
+        echo "EXTERNALANCHORPEERADDRESSES: ${EXTERNALANCHORPEERADDRESSES}"
     done
     #update env.sh with the Anchor Peer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the hostnames to configtx.yaml

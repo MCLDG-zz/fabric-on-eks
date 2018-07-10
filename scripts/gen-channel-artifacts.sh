@@ -63,9 +63,12 @@ function printPeerOrg {
        - Host: $PEER_HOST
          Port: 7051"
     if [[ $EXTERNALANCHORPEER ]]; then
+       IFS=':' read -r -a arr <<< "$EXTERNALANCHORPEER"
+       PEER=${arr[0]}
+       PORT=${arr[1]}
        echo "
-       - Host: $EXTERNALANCHORPEER
-         Port: 7051"
+       - Host: $PEER
+         Port: $PORT"
     fi
 }
 
