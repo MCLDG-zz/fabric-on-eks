@@ -448,7 +448,7 @@ function startAnchorPeerNLB {
     cd $HOME
     echo "Starting Network Load Balancer service for Anchor Peers"
     for ORG in $PEER_ORGS; do
-      kubectl apply -f $REPO/k8s/fabric-nlb-peer-$ORG.yaml
+      kubectl apply -f $REPO/k8s/fabric-nlb-anchor-peer1-$ORG.yaml
     done
 
     #wait for service to be created and hostname to be available. This could take a few seconds
