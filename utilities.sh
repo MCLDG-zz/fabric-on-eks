@@ -463,8 +463,8 @@ function startAnchorPeerNLB {
             NLBHOSTPORT=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
-        EXTERNALANCHORPEERADDRESSES+=(${NLBHOSTNAME}:${NLBHOSTPORT})
-        echo "EXTERNALANCHORPEERADDRESSES: ${EXTERNALANCHORPEERADDRESSES}"
+        EXTERNALANCHORPEERADDRESSES=( "${EXTERNALANCHORPEERADDRESSES[@]}" "${NLBHOSTNAME}:${NLBHOSTPORT}" )
+        echo "adding ${NLBHOSTNAME}:${NLBHOSTPORT} to EXTERNALANCHORPEERADDRESSES: ${EXTERNALANCHORPEERADDRESSES}"
     done
     #update env.sh with the Anchor Peer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the hostnames to configtx.yaml
