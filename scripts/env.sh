@@ -384,7 +384,7 @@ function getExternalAnchorPeer {
       echo "Usage: getExternalAnchorPeer <ORG>"
       exit 1
    fi
-   orgsarr=($ORGS)
+   orgsarr=($PEER_ORGS)
    anchorarr=($EXTERNAL_ANCHOR_PEER_ADDRESSES)
    EXTERNALANCHORPEER=""
 
