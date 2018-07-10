@@ -163,18 +163,110 @@ The final 3 lines of the log file should look as follows:
 If you've completed all these steps, you will have a POC network running. If you would like to connect remote peers to 
 this network, continue with the steps below.
 
-## Getting Started - additional steps for building a PROD network
-Adding a new organisation to an existing Fabric network involves a number of steps:
-* 
+## Where to from here?
+You have a few options:
 
-### Step 10: Repeat steps 1-7 in a different AWS account
-On the EC2 instance created in Step 2 above, in the home directory:
+* create a remote peer in a different AWS account that belongs to an existing organisation (i.e. one of the orgs created above), 
+then add this peer to the existing network
+* create a new organisation in the existing network, and add a new peer for this organisation
+* create a new organisation in the existing network, and add a new remote peer for this organisation
+
+## Create a remote peer in a different AWS account
+
+### Create a Kubernetes cluster in the new account
+Repeat steps 1-7 under Getting Started in a different AWS account.
+
+### A note on connecting remote peers
+A peer connects to the orderer according to the following process:
+
+* The orderer URL and port is written in the configtx.yaml file, and encoded into the genesis block of a channel
+* Before a peer joins an existing channel, the genesis block (or channel config block) must be available, so that the peer can execute:
+`peer channel join -b /$DATA/$CHANNEL_NAME.block`
+* The peer joins the channel and receives a copy of the genesis block, which contains the orderer endpoint and the TLS
+cert for the orderer. 
+* The peer establishes a connection to the orderer based on this information
+
+To establish this connection between a remote peer running in one AWS account and the orderer running in another AWS account,
+I do the following:
+
+* Expose the orderer endpoint via an NLB (since the orderer communicates using gRPC)
+* Configure the NLB enpoint in configtx.yaml
+* Change this ENV variable in the fabric-deployment-orderer.yaml: ORDERER_HOST. This variable is used as the 
+host URL when generating the TLS cert for the orderer, so it's important it matches the URL the orderer is listening on (i.e. the NLB endpoint).
+
+TODO: the final step above needs completing. I need to update ORDERER_HOST when I gen-fabric.sh, so that one of the orderers
+is setup with the NLB as hostname in the TLS cert.
+
+Note that these steps are already done for you in the scripts. See `start-fabric.sh`. This creates an NLB for the 
+orderer, and updates env.sh with the NLB DNS. This then finds its way into configtx.yaml, and therefore into mychannel.block.
+See configtx.yaml, which should contain something similar to this:
 
 ```bash
-cd fabric-on-eks
-./start-fabric.sh
+Profiles:
+
+  OrgsOrdererGenesis:
+    Orderer:
+      # Orderer Type: The orderer implementation to start
+      # Available types are "solo" and "kafka"
+      OrdererType: kafka
+      Addresses:
+        - a350740ea6df511e88a810af1c0a30f8-5dfb744db3223cc4.elb.us-west-2.amazonaws.com:7050
+        - orderer1-org0.org0:7050
 ```
 
+The peer should now be able to join the channel, which requires establishing a connection to the orderer via the NLB.
+Follow the steps below for 'new peer joining channel'
+
+### Start the peer
+These steps will join a new peer to a channel, or will join a peer that has crashed and restarted to a channel.
+Peers that crash and restart lose their state, and will therefore not be joined automatically to channel, nor will
+they have the chaincode installed, which means they won't be able to take part in any TX. 
+
+If you are creating a brand new peer you'll need the certificate and key information for the organisation the peer belongs
+to. If you are restarting a crashed peer, this step isn't necessary as you already have access to alThese steps are a quick and dirty way of obtaining this info - not recommended for production use. For production use,
+you should create a new organisation, generate the certs and keys for the new org, add the new organisation to the channel 
+config, then start the peers for the new org.
+
+However, a quick method of setting up a remote peer for an existing org involves copying the existing crypto material.
+Copy the certificate and key information from the main Kubernetes cluster, as follows:
+
+* SSH into the EC2 instance you created in Step 2, for the original Kubernetes cluster in your original AWS account
+* In the home directory, execute `sudo tar -cvf opt.tar /opt/share/`, to zip up the mounted EFS directory with all the certs and keys
+* Exit the SSH, back to your local laptop or host
+* Copy the tar file to your local laptop or host using (replace with your directory name, and EC2 DNS):
+ `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key.pem ec2-user@ec2-18-236-169-96.us-west-2.compute.amazonaws.com:/home/ec2-user/opt.tar opt.tar`
+* Copy the local tar file to your the SSH EC2 host in your new AWS account using (replace with your directory name, and EC2 DNS):
+`scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key-account1.pem /Users/edgema/Documents/apps/fabric-on-eks/opt.tar  ec2-user@ec2-34-228-23-44.compute-1.amazonaws.com:/home/ec2-user/opt.tar`
+* SSH into the EC2 instance you created in the new AWS account
+* `cd /`
+* `tar xvf ~/opt.tar` - this should extract all the crypto material onto the EFS drive, at /opt/share
+
+
+If you are creating a brand new peer OR restarting a crashed peer, do this step:
+On the EC2 instance in the new account created above, in the home directory, run:
+
+```bash
+start-remote-peer.sh
+```
+
+This will register and start the peers, but not the orderer. The peer will start, but will not be joined to any 
+channels. At this point the peer has little use as it does not maintain any ledger state.
+
+### Join the peer to a channel
+I've created the script, 'peer-join-channel.sh' to join the peer to the channel and install the chaincode. There is a 
+matching YAML in k8s-templates (k8s-templates/fabric-deployment-peer-join-channel.yaml) that will be used to generate a 
+single YAML in the k8s folder (by gen-fabric.sh). This YAML is named `k8s/fabric-deployment-peer-join-channel-org1.yaml`,
+and once it is deployed to K8s it will invoke 'peer-join-channel.sh' and join the remote peer to the Fabric channel.
+
+If you want to join a different peer or org to the channel besides the one generated for you in
+`k8s/fabric-deployment-peer-join-channel-org1.yaml`, simply edit this file and change the peer and domain details. Then:
+
+```bash
+kubectl apply -f k8s/fabric-deployment-peer-join-channel-org1.yaml
+```
+
+This will connect the new peer to the channel. You can then check the peer logs to ensure
+all the TX are being sent to the new peer.
 
 
 ### Step 9: Adding a new org
@@ -236,59 +328,6 @@ org2    rca     7054->30500
         peer2         30553,30554
         
         
-## Restarting peers
-If a peer crashes it will be automatically restarted by K8s. However, it will not be joined to channel, nor will
-it have the chaincode installed, which means it won't be able to take part in any TX. I've created the script,
-'peer-join-channel.sh' to join the peer to the channel and install the chaincode. There is also a matching YAML
-in k8s-templates that will be used to generate a single YAML in the k8s folder (by gen-fabric.sh). You'll need to
-edit the YAML in the k8s folder and update the namespaces and ENV to match the peer/org you need to restart, then
-'kubectl apply' this file. This will connect the new peer to the channel. You can then check the peer logs to ensure
-all the TX are being sent to the new peer.
-
-## Connecting remote peers
-A peer connects to the orderer according to the following process:
-
-* The orderer URL and port is written in the configtx.yaml file, and encoded into the genesis block of a channel
-* The peer joins the channel and receives a copy of the genesis block, which contains the orderer endpoint and the TLS
-cert for the orderer. The peer needs the genesis block (or channel config block) available, so it can execute:
-`peer channel join -b /$DATA/$CHANNEL_NAME.block`
-* The peer establishes a connection based on this information
-
-To establish this connection remotely, instead of within the K8s cluster, I do the following:
-
-* Assign an Elastic IP to the EC2 node running the orderer
-* Open the security group to accept TCP traffic to the NodePort of the orderer K8s svc
-
-The peer should now be able to join the channel, which requires establishing a connection to the orderer via the EIP above
-
-I also changed this ENV variable in the fabric-deployment-orderer.yaml: ORDERER_HOST. This variable is used as the 
-host URL when generating the TLS cert for the orderer, so it's important it matches the URL the orderer is listening on.
-
-### Testing connection to remote peer
-
-The configtx.yaml is configured with a remote address. My `start-fabric.sh` script does this by creating an NLB for the 
-orderer, and updating env.sh with the NLB DNS. This then finds its way into configtx.yaml, and therefore into mychannel.block:
-
-Profiles:
-
-  OrgsOrdererGenesis:
-    Orderer:
-      # Orderer Type: The orderer implementation to start
-      # Available types are "solo" and "kafka"
-      OrdererType: kafka
-      Addresses:
-        - a350740ea6df511e88a810af1c0a30f8-5dfb744db3223cc4.elb.us-west-2.amazonaws.com:7050
-        - orderer1-org0.org0:7050
-
-In another AWS account, I follow the same steps as for a new Fabric network, though only steps 1-6 in this README. Then I execute
-`start-remote-peer.sh`. This will register and start peers, but not an orderer. The peer will start, but will not be joined to any 
-channels.
-
-Copy the mychannel.block from the original AWS account (it's in EFS, in /opt/share/rca-data/configtx.yaml) to the same location
-in the new account.
-
-To join the peer to the channel referenced in mychannel.block, follow the steps under `Restarting peers` above.
-
 ### temp commands
 
 switching to user

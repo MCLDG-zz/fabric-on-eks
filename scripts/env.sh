@@ -41,6 +41,7 @@ NUM_PEERS=2
 
 # Leave these blank. They are populated by other scripts
 EXTERNAL_ORDERER_ADDRESSES=""
+EXTERNAL_ANCHOR_PEER_ADDRESSES=""
 EXTERNAL_KAFKA_BROKER=""
 
 # All org names
@@ -173,10 +174,6 @@ function initOrdererVars {
    NUM=$2
    initOrgVars $ORG
    getDomain $ORG
-#   ORDERER_HOST=orderer${NUM}-${ORG}.${DOMAIN}
-# if using a remote orderer. The URL is the Elastic IP, the port is the K8s svc port
-#   ORDERER_HOST=ec2-18-218-247-63.us-east-2.compute.amazonaws.com
-#   ORDERER_PORT=30740
    ORDERER_HOST=orderer${NUM}-${ORG}.${DOMAIN}
    ORDERER_PORT=7050
    ORDERER_NAME=orderer${NUM}-${ORG}
@@ -233,6 +230,7 @@ function initPeerVars {
    NUM=$2
    initOrgVars $ORG
    getDomain $ORG
+   getExternalAnchorPeer $ORG
    PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    PEER_NAME=peer${NUM}-${ORG}
    PEER_PASS=${PEER_NAME}pw
@@ -375,6 +373,24 @@ function getDomain {
    for i in "${!orgsarr[@]}"; do
       if [[ "${orgsarr[$i]}" = "${1}" ]]; then
            DOMAIN=${domainarr[$i]}
+           return
+      fi
+   done
+}
+
+# Get the external anchor peer associated with the ORG
+function getExternalAnchorPeer {
+   if [ $# -ne 1 ]; then
+      echo "Usage: getExternalAnchorPeer <ORG>"
+      exit 1
+   fi
+   orgsarr=($ORGS)
+   anchorarr=($EXTERNAL_ANCHOR_PEER_ADDRESSES)
+   EXTERNALANCHORPEER=""
+
+   for i in "${!orgsarr[@]}"; do
+      if [[ "${orgsarr[$i]}" = "${1}" ]]; then
+           EXTERNALANCHORPEER=${anchorarr[$i]}
            return
       fi
    done

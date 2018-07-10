@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,33 +13,23 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-set -e
-
-function main {
-    echo "Beginning setup of remote peer on Hyperledger Fabric on Kubernetes ..."
-    cd $HOME/$REPO
-    source util-prep.sh
-    updateRepo $HOME $REPO
-    #makeDirs $DATADIR
-    #copyScripts $HOME $REPO $DATADIR
-    source $SCRIPTS/env.sh
-    cd $HOME/$REPO
-    source utilities.sh
-    #makeDirsForOrg $DATADIR
-    genTemplates $HOME $REPO
-    createNamespaces $HOME $REPO
-    startPVC $HOME $REPO
-    startRCA $HOME $REPO
-    startICA $HOME $REPO
-    startRegisterPeers $HOME $REPO
-    startPeers $HOME $REPO
-    whatsRunning
-    echo "Setup of remote peer on Hyperledger Fabric on Kubernetes complete"
-}
-
-SDIR=$(dirname "$0")
-DATADIR=/opt/share/
-SCRIPTS=$DATADIR/rca-scripts
-REPO=fabric-on-eks
-main
-
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: %DOMAIN%
+  name: peer%NUM%-%ORG%-nlb
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+ selector:
+   app: hyperledger
+   role: peer
+   org: %ORG%
+   name: peer%NUM%-%ORG%
+ type: NodePort
+ ports:
+   - name: endpoint
+     protocol: TCP
+     port: 7051
+     targetPort: 7051
+ type: LoadBalancer

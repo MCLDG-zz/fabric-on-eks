@@ -59,9 +59,14 @@ function printPeerOrg {
        # encoded in the genesis block (actually, it's also in the channel config block
        # subsequent to any channel config updates. E.g. if you do 'peer channel update'
        # followed by 'peer channel fetch config', the config will contain the updated anchor peer info,
-       # in the Application section context
+       # in the Application section context)
        - Host: $PEER_HOST
          Port: 7051"
+    if [[ $EXTERNALANCHORPEER ]]; then
+       echo "
+       - Host: $EXTERNALANCHORPEER
+         Port: 7051"
+    fi
 }
 
 function makeConfigTxYaml {

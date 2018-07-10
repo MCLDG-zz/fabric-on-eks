@@ -37,6 +37,7 @@ function main {
     startRegisterOrderers $HOME $REPO
     startRegisterPeers $HOME $REPO
     startOrdererNLB $HOME $REPO
+    startAnchorPeerNLB $HOME $REPO
     updateChannelArtifacts $HOME $REPO
     startOrderer $HOME $REPO
     startPeers $HOME $REPO

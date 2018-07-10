@@ -245,6 +245,8 @@ function genPeers {
     for ORG in $PEER_ORGS; do
         getDomain $ORG
         local COUNT=1
+        #the first peer of an org defaults to the anchor peer
+        sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" ${K8STEMPLATES}/fabric-nlb-anchor-peer.yaml > ${K8SYAML}/fabric-nlb-anchor-peer$COUNT-$ORG.yaml
         PORTCHAIN=$peerport
         while [[ "$COUNT" -le $NUM_PEERS ]]; do
             PORTCHAIN=$((PORTCHAIN+2))

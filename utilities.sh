@@ -438,6 +438,39 @@ function startOrdererNLB {
     sed -e "s/EXTERNAL_ORDERER_ADDRESSES=\"\"/EXTERNAL_ORDERER_ADDRESSES=\"${EXTERNALORDERERADDRESSES}\"/g" -i $SCRIPTS/env.sh
 }
 
+function startAnchorPeerNLB {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startAnchorPeerNLB <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    echo "Starting Network Load Balancer service for Anchor Peers"
+    for ORG in $PEER_ORGS; do
+      kubectl apply -f $REPO/k8s/fabric-nlb-peer-$ORG.yaml
+    done
+
+    #wait for service to be created and hostname to be available. This could take a few seconds
+    EXTERNALANCHORPEERADDRESSES=()
+    for ORG in $PEER_ORGS; do
+        getDomain $ORG
+        NLBHOSTNAME=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+        NLBHOSTPORT=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
+        while [[ "${NLBHOSTNAME}" != *"elb"* ]]; do
+            echo "Waiting on AWS to create NLB for Anchor Peers. Hostname = ${NLBHOSTNAME}"
+            NLBHOSTNAME=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+            NLBHOSTPORT=$(kubectl get svc peer1-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
+            sleep 10
+        done
+        EXTERNALANCHORPEERADDRESSES+=(${NLBHOSTNAME}:${NLBHOSTPORT})
+    done
+    #update env.sh with the Anchor Peer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
+    # add the hostnames to configtx.yaml
+    echo "Updating env.sh with Anchor Peer NLB endpoints: ${EXTERNALANCHORPEERADDRESSES}"
+    sed -e "s/EXTERNAL_ANCHOR_PEER_ADDRESSES=\"\"/EXTERNAL_ANCHOR_PEER_ADDRESSES=\"${EXTERNALANCHORPEERADDRESSES[*]}\"/g" -i $SCRIPTS/env.sh
+}
+
 function startOrderer {
     if [ $# -ne 2 ]; then
         echo "Usage: startOrderer <home-dir> <repo-name>"
