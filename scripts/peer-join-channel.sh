@@ -29,11 +29,10 @@ function main {
 
     cloneFabricSamples
 
-    log "Peer for '$ORG' is joining channel '$CHANNEL_NAME'"
-
     # Specific peer joins the channel
     export ORG=$PEERORG
     export PEERNUM=$PEERNUM
+    log "Peer for '$ORG' is joining channel '$CHANNEL_NAME'"
     initPeerVars $ORG $PEERNUM
     joinChannel
     # Install chaincode on the 1st peer in each org

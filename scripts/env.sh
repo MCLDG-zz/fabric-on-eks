@@ -231,7 +231,12 @@ function initPeerVars {
    initOrgVars $ORG
    getDomain $ORG
    getExternalAnchorPeer $ORG
-   PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
+   if [ $ORG == "org1" ]; then
+        export PEER_HOST=a82f62362849f11e88a810af1c0a30f8-90ea6db95c5049ae.elb.us-west-2.amazonaws.com
+   else
+        export PEER_HOST=a831c9638849f11e8834f06b86f026a6-e138d7c243c850d3.elb.us-west-2.amazonaws.com
+   fi
+   #PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    PEER_NAME=peer${NUM}-${ORG}
    PEER_PASS=${PEER_NAME}pw
    PEER_NAME_PASS=${PEER_NAME}:${PEER_PASS}
@@ -240,7 +245,8 @@ function initPeerVars {
    TLSDIR=$MYHOME/tls
 
    export FABRIC_CA_CLIENT=$MYHOME
-   export CORE_PEER_ID=$PEER_HOST
+   #export CORE_PEER_ID=$PEER_HOST
+   export CORE_PEER_ID=peer${NUM}-${ORG}.${DOMAIN}
    export CORE_PEER_ADDRESS=$PEER_HOST:7051
 #   export CORE_PEER_CHAINCODELISTENADDRESS=$PEER_HOST:7052
    export CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
