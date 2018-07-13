@@ -36,8 +36,10 @@ function main {
     startICA $HOME $REPO
     startRegisterOrderers $HOME $REPO
     startRegisterPeers $HOME $REPO
-    startOrdererNLB $HOME $REPO
-    startAnchorPeerNLB $HOME $REPO
+    if [ $FABRIC_NETWORK_TYPE == "PROD" ]; then
+        startOrdererNLB $HOME $REPO
+        startAnchorPeerNLB $HOME $REPO
+    fi
     updateChannelArtifacts $HOME $REPO
     startOrderer $HOME $REPO
     startPeers $HOME $REPO

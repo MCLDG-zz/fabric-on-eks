@@ -12,7 +12,12 @@
 #####################################################################################
 
 # Type of network. Options are: POC or PROD
-FABRIC_NETWORK_TYPE="POC"
+# If FABRIC_NETWORK_TYPE="PROD" I will generate NLB (network load balancers) to expose the orderers and anchor peers
+# so they can communicate with remote peers located in other regions and/or accounts. This simulates a production network
+# which consists of remote members, with peers on premise or on other Cloud platforms.
+# If FABRIC_NETWORK_TYPE="POC" I will assume all peers and orderers are running in the same account / region and will
+# assume local, in-cluster DNS using standard Kuberentes service names for lookup
+FABRIC_NETWORK_TYPE="PROD"
 
 # Names of the Orderer organizations. Regardless of the FABRIC_NETWORK_TYPE there will be a single
 # Orderer org. You may change the names of the ORG and DOMAIN to match your organisation
@@ -21,14 +26,10 @@ ORDERER_DOMAINS="org0"
 
 # ORDERER_TYPE can be "kafka" or "solo". If you set this to Kafka, a Kafka/Zookeeper cluster will be created in
 # the same AWS account as the orderer. Otherwise, you may choose 'solo'
+# If FABRIC_NETWORK_TYPE="PROD", this should be set to kafka
 ORDERER_TYPE="kafka"
 
 # Names of the peer organizations.
-# If FABRIC_NETWORK_TYPE="POC" I will generate as many organisations as you enter here. Each organisation will correspond
-# to a Kubernetes namespace, and within the namespace I will run the number of peers specified by NUM_PEERS.
-# If FABRIC_NETWORK_TYPE="PROD" only include one organisation here. I will generate one Kubernetes namespace, and within
-# the namespace I will run the number of peers specified by NUM_PEERS. For a PROD network I expect the other organisations
-# to be remote, and to execute in separate AWS Accounts. Therefore only use one organisation here
 PEER_ORGS="org1 org2"
 PEER_DOMAINS="org1 org2"
 
@@ -230,13 +231,12 @@ function initPeerVars {
    NUM=$2
    initOrgVars $ORG
    getDomain $ORG
-   getExternalAnchorPeer $ORG
-   if [ $ORG == "org1" ]; then
-        export PEER_HOST=a82f62362849f11e88a810af1c0a30f8-90ea6db95c5049ae.elb.us-west-2.amazonaws.com
+   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -eq 1 ]; then
+     getExternalAnchorPeer $ORG
+     export PEER_HOST=$EXTERNALANCHORPEER
    else
-        export PEER_HOST=a831c9638849f11e8834f06b86f026a6-e138d7c243c850d3.elb.us-west-2.amazonaws.com
+     PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    fi
-   #PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    PEER_NAME=peer${NUM}-${ORG}
    PEER_PASS=${PEER_NAME}pw
    PEER_NAME_PASS=${PEER_NAME}:${PEER_PASS}
@@ -269,9 +269,12 @@ function initPeerVars {
    export CORE_PEER_GOSSIP_USELEADERELECTION=true
    export CORE_PEER_GOSSIP_ORGLEADER=false
    export CORE_PEER_GOSSIP_EXTERNALENDPOINT=$PEER_HOST:7051
-   if [ $NUM -gt 1 ]; then
-      # Point the non-anchor peers to the anchor peer, which is always the 1st peer
-      export CORE_PEER_GOSSIP_BOOTSTRAP=peer1-${ORG}:7051
+   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -gt 1 ]; then
+      # Point the non-anchor peers to the remote anchor peer, which is always the 1st peer
+      export CORE_PEER_GOSSIP_BOOTSTRAP=peer1-${EXTERNALANCHORPEER}:${EXTERNALANCHORPORT}
+   elif [ $FABRIC_NETWORK_TYPE == "POC" ] && [ $NUM -gt 1 ]; then
+      # Point the non-anchor peers to the local anchor peer, which is always the 1st peer
+      export CORE_PEER_GOSSIP_BOOTSTRAP=peer${NUM}-${ORG}.${DOMAIN}:7051
    fi
    export ORDERER_CONN_ARGS="$ORDERER_PORT_ARGS --keyfile $CORE_PEER_TLS_CLIENTKEY_FILE --certfile $CORE_PEER_TLS_CLIENTCERT_FILE"
 #   export ORDERER_CONN_ARGS="$ORDERER_PORT_ARGS"
@@ -396,8 +399,10 @@ function getExternalAnchorPeer {
 
    for i in "${!orgsarr[@]}"; do
       if [[ "${orgsarr[$i]}" = "${1}" ]]; then
-           EXTERNALANCHORPEER=${anchorarr[$i]}
-           return
+        IFS=':' read -r -a arr <<< "${anchorarr[$i]}"
+        EXTERNALANCHORPEER=${arr[0]}
+        EXTERNALANCHORPORT=${arr[1]}
+        return
       fi
    done
 }

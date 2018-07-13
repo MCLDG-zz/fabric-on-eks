@@ -18,6 +18,8 @@
 DATA=/opt/share
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
+REPO=fabric-on-eks
+K8SYAML=k8s
 
 function removeDirs {
     if [ $# -ne 1 ]; then
@@ -429,6 +431,15 @@ function startOrdererNLB {
             sleep 10
         done
         EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}        - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
+        # Update the orderer deployment yaml with the orderer NLB DNS endpoint. This will allow remote connection from a peer
+        # This is only done if: there is more than 1 orderer AND $FABRIC_NETWORK_TYPE == "PROD" (in fact, this function is only
+        # called if we are setting up a PROD network)
+        # Only the 2nd orderer is updated with the NLB endpoint. The 1st orderer retains a local orderer endpoint for connection
+        # from local peers.
+        cd $HOME/$REPO
+        local PEERHOST=peer1-${ORG}.${DOMAIN}
+        echo "replacing host: ${PEERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${K8SYAML}/fabric-deployment-peer1-${ORG}.yaml"
+        sed -e "s/${PEERHOST}/${NLBHOSTNAME}/g" -i ${K8SYAML}/fabric-deployment-peer1-$ORG.yaml
         COUNT=$((COUNT+1))
       done
     done
@@ -465,6 +476,13 @@ function startAnchorPeerNLB {
         done
         EXTERNALANCHORPEERADDRESSES="${EXTERNALANCHORPEERADDRESSES} ${NLBHOSTNAME}:${NLBHOSTPORT}"
         echo "adding ${NLBHOSTNAME}:${NLBHOSTPORT} to EXTERNALANCHORPEERADDRESSES: ${EXTERNALANCHORPEERADDRESSES}"
+        # Update the peer deployment yaml with the anchor peer DNS endpoint. Assume peer1 is the anchor peer for each org.
+        # This allows peers deployed in different regions/accounts to communicate.
+        # This is only done if: $FABRIC_NETWORK_TYPE == "PROD" (in fact, this function is only called if we are setting up a PROD network)
+        cd $HOME/$REPO
+        local PEERHOST=peer1-${ORG}.${DOMAIN}
+        echo "replacing host: ${PEERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${K8SYAML}/fabric-deployment-peer1-${ORG}.yaml"
+        sed -e "s/${PEERHOST}/${NLBHOSTNAME}/g" -i ${K8SYAML}/fabric-deployment-peer1-$ORG.yaml
     done
     #update env.sh with the Anchor Peer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the hostnames to configtx.yaml
@@ -503,6 +521,14 @@ function startPeers {
     for ORG in $PEER_ORGS; do
       local COUNT=1
       while [[ "$COUNT" -le $NUM_PEERS ]]; do
+            if [[ $EXTERNALANCHORPEER ]]; then
+               IFS=':' read -r -a arr <<< "$EXTERNALANCHORPEER"
+               PEER=${arr[0]}
+               PORT=${arr[1]}
+               echo "
+               - Host: $PEER
+                 Port: $PORT"
+            fi
          kubectl apply -f $REPO/k8s/fabric-deployment-peer$COUNT-$ORG.yaml
          COUNT=$((COUNT+1))
       done

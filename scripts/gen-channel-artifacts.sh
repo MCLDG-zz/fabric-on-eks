@@ -60,16 +60,16 @@ function printPeerOrg {
        # subsequent to any channel config updates. E.g. if you do 'peer channel update'
        # followed by 'peer channel fetch config', the config will contain the updated anchor peer info,
        # in the Application section context)
-       # - Host: $PEER_HOST
-       #   Port: 7051"
-    if [[ $EXTERNALANCHORPEER ]]; then
-       IFS=':' read -r -a arr <<< "$EXTERNALANCHORPEER"
-       PEER=${arr[0]}
-       PORT=${arr[1]}
-       echo "
-       - Host: $PEER
-         Port: $PORT"
-    fi
+        - Host: $PEER_HOST
+          Port: 7051"
+#    if [[ $FABRIC_NETWORK_TYPE == "PROD" ]]; then
+#       IFS=':' read -r -a arr <<< "$EXTERNALANCHORPEER"
+#       PEER=${arr[0]}
+#       PORT=${arr[1]}
+#       echo "
+#       - Host: $PEER
+#         Port: $PORT"
+#    fi
 }
 
 function makeConfigTxYaml {

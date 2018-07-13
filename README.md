@@ -187,19 +187,30 @@ cert for the orderer.
 * The peer establishes a connection to the orderer based on this information
 
 To establish this connection between a remote peer running in one AWS account and the orderer running in another AWS account,
-I do the following:
+I use NLB (network load balancer) to expose the gRPC endpoints of peers and orderers. 
 
-* Expose the orderer endpoint via an NLB (since the orderer communicates using gRPC)
-* Configure the NLB enpoint in configtx.yaml
-* Change this ENV variable in the fabric-deployment-orderer.yaml: ORDERER_HOST. This variable is used as the 
-host URL when generating the TLS cert for the orderer, so it's important it matches the URL the orderer is listening on (i.e. the NLB endpoint).
+This requires the following to be configured in order to connect a remote peer:
 
-TODO: the final step above needs completing. I need to update ORDERER_HOST when I gen-fabric.sh, so that one of the orderers
-is setup with the NLB as hostname in the TLS cert.
+* AnchorPeers->Host in configtx.yaml must be an external DNS. I expose the peer using an NLB, and update this configuration
+ variable with the NLB endpoint (see the script gen-channel-artifacts.sh)
+* Profile-><profile name>->Orderer->Addresses in configtx.yaml must contain an external DNS for the orderer service node 
+endpoint. It can contain a mix of internal and external DNS entries. I run 2x orderer service nodes, expose them using NLB, 
+and update this configuration variable with the local and NLB endpoints. The peers will loop through all the endpoints 
+until they find one that works. This means that peers local to the orderer and remote peers will be able to connect to 
+the orderer endpoint (see the script gen-channel-artifacts.sh)
+* ORDERER_HOST in k8s/fabric-deployment-orderer1-org0.yaml must be updated with the NLB endpoint as this is used as the
+host URL when generating the TLS cert for the orderer, so it's important it matches the URL the orderer is listening on 
+(i.e. the NLB endpoint) (see the script utilities.sh)
+* The following ENV variables must be updated in the peer. These are updated in env.sh (if required), and also in the 
+k8s/fabric-deployment-peer..... yaml files (see the script utilities.sh):
+    * PEER_HOST
+    * CORE_PEER_ADDRESS
+    * CORE_PEER_GOSSIP_EXTERNALENDPOINT
 
-Note that these steps are already done for you in the scripts. See `start-fabric.sh`. This creates an NLB for the 
-orderer, and updates env.sh with the NLB DNS. This then finds its way into configtx.yaml, and therefore into mychannel.block.
-See configtx.yaml, which should contain something similar to this:
+Note that these steps are already done for you in the scripts. If [ $FABRIC_NETWORK_TYPE == "PROD" ] (see env.sh), the
+scripts will create an NLB for the orderer and the anchor peers, and update env.sh with the NLB DNS. These details then 
+find their way into configtx.yaml, and therefore into mychannel.block. See configtx.yaml, which should contain something 
+similar to this:
 
 ```bash
 Profiles:
@@ -233,17 +244,18 @@ Copy the certificate and key information from the main Kubernetes cluster, as fo
 * SSH into the EC2 instance you created in Step 2, for the original Kubernetes cluster in your original AWS account
 * In the home directory, execute `sudo tar -cvf opt.tar /opt/share/`, to zip up the mounted EFS directory with all the certs and keys
 * Exit the SSH, back to your local laptop or host
-* Copy the tar file to your local laptop or host using (replace with your directory name, and EC2 DNS):
+* Copy the tar file to your local laptop or host using (replace with your directory name, EC2 DNS and keypair):
  `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key.pem ec2-user@ec2-18-236-169-96.us-west-2.compute.amazonaws.com:/home/ec2-user/opt.tar opt.tar`
-* Copy the local tar file to your the SSH EC2 host in your new AWS account using (replace with your directory name, and EC2 DNS):
+* Copy the local tar file to your the SSH EC2 host in your new AWS account using (replace with your directory name, EC2 DNS and keypair):
 `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key-account1.pem /Users/edgema/Documents/apps/fabric-on-eks/opt.tar  ec2-user@ec2-34-228-23-44.compute-1.amazonaws.com:/home/ec2-user/opt.tar`
 * SSH into the EC2 instance you created in the new AWS account
 * `cd /`
+* `rm -rf /opt/share`
 * `tar xvf ~/opt.tar` - this should extract all the crypto material onto the EFS drive, at /opt/share
 
 
-If you are creating a brand new peer OR restarting a crashed peer, do this step:
-On the EC2 instance in the new account created above, in the home directory, run:
+If you are creating a brand new peer OR restarting a crashed peer, start the peer. On the EC2 instance in the 
+new account created above, in the repo directory, run:
 
 ```bash
 start-remote-peer.sh
@@ -340,7 +352,15 @@ export FABRIC_CA_CLIENT_TLS_CERTFILES=/data/org1-ca-chain.pem
 fabric-ca-client enroll -d -u https://$USER_NAME:$USER_PASS@ica-org1.org1:7054
    
    
-   
+kubectl delete -f k8s/fabric-deployment-peer1-org1.yaml
+kubectl apply -f k8s/fabric-deployment-peer1-org1.yaml
+kubectl delete -f k8s/fabric-deployment-peer-join-channel-org1.yaml
+kubectl apply -f k8s/fabric-deployment-peer-join-channel-org1.yaml   
+kubectl get deploy -n org1
+kubectl logs deploy/join-channel -n org1
+kubectl logs deploy/peer1-org1 -n org1 -c peer1-org1
+
+
 cd fabric-on-eks/
 git pull
 cd ..
