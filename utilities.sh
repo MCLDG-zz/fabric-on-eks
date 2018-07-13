@@ -19,7 +19,6 @@ DATA=/opt/share
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
 REPO=fabric-on-eks
-K8SYAML=k8s
 
 function removeDirs {
     if [ $# -ne 1 ]; then
@@ -437,7 +436,6 @@ function startOrdererNLB {
         # Only the 2nd orderer is updated with the NLB endpoint. The 1st orderer retains a local orderer endpoint for connection
         # from local peers.
         if [ $COUNT -eq 2 ]; then
-            cd $HOME/$REPO
             local ORDERERHOST=orderer1-${ORG}.${DOMAIN}
             echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml"
             sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
@@ -481,10 +479,9 @@ function startAnchorPeerNLB {
         # Update the peer deployment yaml with the anchor peer DNS endpoint. Assume peer1 is the anchor peer for each org.
         # This allows peers deployed in different regions/accounts to communicate.
         # This is only done if: $FABRIC_NETWORK_TYPE == "PROD" (in fact, this function is only called if we are setting up a PROD network)
-        cd $HOME/$REPO
         local PEERHOST=peer1-${ORG}.${DOMAIN}
-        echo "replacing host: ${PEERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${K8SYAML}/fabric-deployment-peer1-${ORG}.yaml"
-        sed -e "s/${PEERHOST}/${NLBHOSTNAME}/g" -i ${K8SYAML}/fabric-deployment-peer1-$ORG.yaml
+        echo "replacing host: ${PEERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-peer1-${ORG}.yaml"
+        sed -e "s/${PEERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-peer1-$ORG.yaml
     done
     #update env.sh with the Anchor Peer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
     # add the hostnames to configtx.yaml
