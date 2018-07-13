@@ -436,10 +436,12 @@ function startOrdererNLB {
         # called if we are setting up a PROD network)
         # Only the 2nd orderer is updated with the NLB endpoint. The 1st orderer retains a local orderer endpoint for connection
         # from local peers.
-        cd $HOME/$REPO
-        local PEERHOST=peer1-${ORG}.${DOMAIN}
-        echo "replacing host: ${PEERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${K8SYAML}/fabric-deployment-peer1-${ORG}.yaml"
-        sed -e "s/${PEERHOST}/${NLBHOSTNAME}/g" -i ${K8SYAML}/fabric-deployment-peer1-$ORG.yaml
+        if [ $COUNT -eq 2 ]; then
+            cd $HOME/$REPO
+            local ORDERERHOST=orderer1-${ORG}.${DOMAIN}
+            echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml"
+            sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
+        fi
         COUNT=$((COUNT+1))
       done
     done
