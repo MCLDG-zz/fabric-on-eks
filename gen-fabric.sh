@@ -80,6 +80,7 @@ function main {
     genPeers
     genPeerJoinChannel
     genFabricTest
+    genInstallMarblesCC
     genLoadFabric
     genAddOrg
     genSignAddOrg
@@ -272,6 +273,14 @@ function genFabricTest {
     getAdminOrg
     getDomain $ADMINORG
     sed -e "s/%ORG%/${ADMINORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-test-fabric.yaml > ${K8SYAML}/fabric-deployment-test-fabric.yaml
+}
+
+function genInstallMarblesCC {
+    log "Generating Install Marbles CC K8s YAML files"
+    #get the first peer org. Setup only needs to run once, against the peer org
+    getAdminOrg
+    getDomain $ADMINORG
+    sed -e "s/%ORG%/${ADMINORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-install-marbles-cc.yaml > ${K8SYAML}/fabric-deployment-install-marbles-cc.yaml
 }
 
 function genLoadFabric {

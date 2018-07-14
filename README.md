@@ -234,7 +234,8 @@ Peers that crash and restart lose their state, and will therefore not be joined 
 they have the chaincode installed, which means they won't be able to take part in any TX. 
 
 If you are creating a brand new peer you'll need the certificate and key information for the organisation the peer belongs
-to. If you are restarting a crashed peer, this step isn't necessary as you already have access to alThese steps are a quick and dirty way of obtaining this info - not recommended for production use. For production use,
+to. If you are restarting a crashed peer, this step isn't necessary as you already have the crypto material.
+These steps are a quick and dirty way of obtaining this info - not recommended for production use. For production use,
 you should create a new organisation, generate the certs and keys for the new org, add the new organisation to the channel 
 config, then start the peers for the new org.
 
