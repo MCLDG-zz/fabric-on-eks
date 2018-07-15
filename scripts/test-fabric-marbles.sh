@@ -29,7 +29,7 @@ function main {
 
    # Set ORDERER_PORT_ARGS to the args needed to communicate with the 1st orderer
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
-   initOrdererVars ${OORGS[0]} 1
+   initOrdererVars ${OORGS[0]} 2
    export ORDERER_PORT_ARGS="-o $ORDERER_HOST:$ORDERER_PORT --tls --cafile $CA_CHAINFILE --clientauth"
 #   export ORDERER_PORT_ARGS="-o $ORDERER_HOST:7050 --cafile $CA_CHAINFILE"
 
@@ -65,11 +65,28 @@ function main {
 
    # Instantiate chaincode on the 1st peer of the 2nd org
    makePolicy
-   initPeerVars ${PORGS[1]} 1
+   initPeerVars ${PORGS[0]} 1
    instantiateChaincode
+
 
    # Query chaincode from the 1st peer of the 1st org
    initPeerVars ${PORGS[0]} 1
+   switchToAdminIdentity
+   export USER_NAME=marbles-${ORG}
+   export USER_PASS=${USER_NAME}pw
+   log "Enrolling with $CA_NAME as bootstrap identity ..."
+   export FABRIC_CA_CLIENT_HOME=$HOME/cas/$CA_NAME
+   export FABRIC_CA_CLIENT_TLS_CERTFILES=$CA_CHAINFILE
+   fabric-ca-client enroll -d -u https://$CA_ADMIN_USER_PASS@$CA_HOST:7054
+
+    log "Registering admin identity with $CA_NAME"
+    # The admin identity has the "admin" attribute which is added to ECert by default
+    fabric-ca-client register -d --id.name $ADMIN_NAME --id.secret $ADMIN_PASS --id.attrs "hf.Registrar.Roles=client,hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,admin=true:ecert,abac.init=true:ecert"
+
+    log "Registering user identity ${USER_NAME} with $CA_NAME"
+    fabric-ca-client register -d --id.name $USER_NAME --id.secret $USER_PASS
+
+
    switchToUserIdentity
    sleep 5
    chaincodeInit
@@ -78,16 +95,22 @@ function main {
 
    # Invoke chaincode on the 1st peer of the 1st org
    initPeerVars ${PORGS[0]} 1
+   export USER_NAME=marbles-${ORG}
+   export USER_PASS=${USER_NAME}pw
+
    switchToUserIdentity
    transferMarble
 
    ## Install chaincode on 2nd peer of 2nd org
-   initPeerVars ${PORGS[1]} 2
+   initPeerVars ${PORGS[0]} 2
    installChaincode
 
    # Query chaincode on 2nd peer of 2nd org
    sleep 10
-   initPeerVars ${PORGS[1]} 2
+   initPeerVars ${PORGS[0]} 2
+   export USER_NAME=marbles-${ORG}
+   export USER_PASS=${USER_NAME}pw
+
    switchToUserIdentity
    chaincodeQuery
 
@@ -136,7 +159,8 @@ function joinChannel {
          return
       fi
       if [ $COUNT -gt $MAX_RETRY ]; then
-         fatalr "Peer $PEER_NAME failed to join channel '$CHANNEL_NAME' in $MAX_RETRY retries"
+         log "Peer $PEER_NAME failed to join channel '$CHANNEL_NAME' in $MAX_RETRY retries"
+         break
       fi
       COUNT=$((COUNT+1))
       sleep 1
@@ -201,11 +225,6 @@ function finish {
       log "Tests did not complete successfully; see $RUN_LOGFILE for more details"
       touch /$RUN_FAIL_FILE
    fi
-}
-
-function fatalr {
-   log "FATAL: $*"
-   exit 1
 }
 
 main

@@ -44,6 +44,8 @@ NUM_PEERS=2
 EXTERNAL_ORDERER_ADDRESSES=""
 EXTERNAL_ANCHOR_PEER_ADDRESSES=""
 EXTERNAL_KAFKA_BROKER=""
+EXTERNALORDERERHOSTNAME=""
+EXTERNALORDERERPORT=""
 
 # All org names
 ORGS="$ORDERER_ORGS $PEER_ORGS"
@@ -175,8 +177,13 @@ function initOrdererVars {
    NUM=$2
    initOrgVars $ORG
    getDomain $ORG
-   ORDERER_HOST=orderer${NUM}-${ORG}.${DOMAIN}
-   ORDERER_PORT=7050
+   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -eq 2 ]; then
+     ORDERER_HOST=$EXTERNALORDERERHOSTNAME
+     ORDERER_PORT=$EXTERNALORDERERPORT
+   else
+     ORDERER_HOST=orderer${NUM}-${ORG}.${DOMAIN}
+     ORDERER_PORT=7050
+   fi
    ORDERER_NAME=orderer${NUM}-${ORG}
    ORDERER_PASS=${ORDERER_NAME}pw
    ORDERER_NAME_PASS=${ORDERER_NAME}:${ORDERER_PASS}
@@ -233,7 +240,7 @@ function initPeerVars {
    getDomain $ORG
    if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -eq 1 ]; then
      getExternalAnchorPeer $ORG
-     export PEER_HOST=$EXTERNALANCHORPEER
+     PEER_HOST=$EXTERNALANCHORPEER
    else
      PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    fi
@@ -387,7 +394,7 @@ function getDomain {
    done
 }
 
-# Get the external anchor peer associated with the ORG
+# Get the external anchor peer endpoint associated with the ORG
 function getExternalAnchorPeer {
    if [ $# -ne 1 ]; then
       echo "Usage: getExternalAnchorPeer <ORG>"

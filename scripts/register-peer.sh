@@ -43,7 +43,7 @@ function registerIdentities {
 # Register any identities associated with a peer
 function registerPeerIdentities {
     export ORG=$PEERORG
-    log "Registering peer: $ORG"
+    log "Registering peer $PEER_NAME with org: $ORG"
     initOrgVars $ORG
     enrollCAAdmin
     local COUNT=1

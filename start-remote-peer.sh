@@ -23,8 +23,8 @@ function main {
     source util-prep.sh
     updateRepo $HOME $REPO
     #makeDirs $DATADIR
-    #copyScripts $HOME $REPO $DATADIR
-    source $SCRIPTS/env-remote-peer.sh
+    copyScripts $HOME $REPO $DATADIR
+    source remote-peer/scripts/env.sh
     cd $HOME/$REPO
     source utilities.sh
     #makeDirsForOrg $DATADIR

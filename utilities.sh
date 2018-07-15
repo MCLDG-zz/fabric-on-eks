@@ -398,6 +398,7 @@ function startKafka {
     fi
 }
 
+# This function is only called if: $FABRIC_NETWORK_TYPE == "PROD"
 function startOrdererNLB {
     if [ $# -ne 2 ]; then
         echo "Usage: startOrdererNLB <home-dir> <repo-name>"
@@ -439,6 +440,10 @@ function startOrdererNLB {
             local ORDERERHOST=orderer${COUNT}-${ORG}.${DOMAIN}
             echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-orderer${COUNT}-${ORG}.yaml"
             sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
+            #Store the NLB endpoint for the 2nd orderer
+            echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${SCRIPTS}/env.sh"
+            sed -e "s/EXTERNALORDERERHOSTNAME=\"\"/EXTERNALORDERERHOSTNAME=\"${EXTERNALORDERERHOSTNAME}\"/g" -i $SCRIPTS/env.sh
+            sed -e "s/EXTERNALORDERERPORT=\"\"/EXTERNALORDERERPORT=\"${EXTERNALORDERERPORT}\"/g" -i $SCRIPTS/env.sh
         fi
         COUNT=$((COUNT+1))
       done
@@ -449,6 +454,7 @@ function startOrdererNLB {
     sed -e "s/EXTERNAL_ORDERER_ADDRESSES=\"\"/EXTERNAL_ORDERER_ADDRESSES=\"${EXTERNALORDERERADDRESSES}\"/g" -i $SCRIPTS/env.sh
 }
 
+# This function is only called if: $FABRIC_NETWORK_TYPE == "PROD"
 function startAnchorPeerNLB {
     if [ $# -ne 2 ]; then
         echo "Usage: startAnchorPeerNLB <home-dir> <repo-name>"
@@ -520,16 +526,13 @@ function startPeers {
     for ORG in $PEER_ORGS; do
       local COUNT=1
       while [[ "$COUNT" -le $NUM_PEERS ]]; do
-            if [[ $EXTERNALANCHORPEER ]]; then
-               IFS=':' read -r -a arr <<< "$EXTERNALANCHORPEER"
-               PEER=${arr[0]}
-               PORT=${arr[1]}
-               echo "
-               - Host: $PEER
-                 Port: $PORT"
-            fi
-         kubectl apply -f $REPO/k8s/fabric-deployment-peer$COUNT-$ORG.yaml
-         COUNT=$((COUNT+1))
+        if [[ $EXTERNALANCHORPEER ]]; then
+           IFS=':' read -r -a arr <<< "$EXTERNALANCHORPEER"
+           PEER=${arr[0]}
+           PORT=${arr[1]}
+        fi
+        kubectl apply -f $REPO/k8s/fabric-deployment-peer$COUNT-$ORG.yaml
+        COUNT=$((COUNT+1))
       done
    done
    confirmDeployments
