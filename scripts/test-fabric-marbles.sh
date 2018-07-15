@@ -130,7 +130,7 @@ function joinChannel {
       log "Peer $PEER_NAME is attempting to join channel '$CHANNEL_NAME' (attempt #${COUNT}) ..."
       peer channel join -b $CHANNEL_NAME.block
       if [ $? -eq 0 ]; then
-         set -e
+         #set -e
          log "Peer $PEER_NAME successfully joined channel '$CHANNEL_NAME'"
          return
       fi
