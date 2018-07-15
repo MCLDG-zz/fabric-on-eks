@@ -25,7 +25,7 @@ function main {
 
    cloneFabricSamples
 
-   log "Installing marbles chaincode"
+   log "Test network using marbles chaincode"
 
    # Set ORDERER_PORT_ARGS to the args needed to communicate with the 1st orderer
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
@@ -35,6 +35,9 @@ function main {
 
    # Convert PEER_ORGS to an array named PORGS
    IFS=', ' read -r -a PORGS <<< "$PEER_ORGS"
+
+   # Create the channel
+   createChannel
 
    # All peers join the channel
    for ORG in $PEER_ORGS; do
@@ -46,6 +49,14 @@ function main {
       done
    done
 
+   # Update the anchor peers
+   for ORG in $PEER_ORGS; do
+      initPeerVars $ORG 1
+      switchToAdminIdentity
+      log "Updating anchor peers for $PEER_NAME ..."
+      peer channel update -c $CHANNEL_NAME -f $ANCHOR_TX_FILE $ORDERER_CONN_ARGS
+   done
+
    # Install chaincode on the 1st peer in each org
    for ORG in $PEER_ORGS; do
       initPeerVars $ORG 1
@@ -54,13 +65,15 @@ function main {
 
    # Instantiate chaincode on the 1st peer of the 2nd org
    makePolicy
+   initPeerVars ${PORGS[1]} 1
    instantiateChaincode
-   chaincodeInit
-   sleep 10
 
    # Query chaincode from the 1st peer of the 1st org
    initPeerVars ${PORGS[0]} 1
    switchToUserIdentity
+   sleep 5
+   chaincodeInit
+   sleep 5
    chaincodeQuery
 
    # Invoke chaincode on the 1st peer of the 1st org
@@ -78,7 +91,7 @@ function main {
    switchToUserIdentity
    chaincodeQuery
 
-   log "Congratulations! The marbles chaincode was installed and tested successfully."
+   log "Congratulations! Marble chaincode tests ran successfully."
 
    done=true
 }
@@ -98,45 +111,70 @@ function cloneFabricSamples {
    mkdir /opt/gopath/src/github.com/hyperledger/fabric
 }
 
+# Enroll as a peer admin and create the channel
+function createChannel {
+   initPeerVars ${PORGS[0]} 1
+   switchToAdminIdentity
+   log "Creating channel '$CHANNEL_NAME' with file '$CHANNEL_TX_FILE' on $ORDERER_HOST using connection '$ORDERER_CONN_ARGS'"
+   peer channel create --logging-level=DEBUG -c $CHANNEL_NAME -f $CHANNEL_TX_FILE $ORDERER_CONN_ARGS
+   cp ${CHANNEL_NAME}.block /$DATA
+}
+
+# Enroll as a fabric admin and join the channel
+function joinChannel {
+   switchToAdminIdentity
+   set +e
+   local COUNT=1
+   MAX_RETRY=10
+   while true; do
+      log "Peer $PEER_NAME is attempting to join channel '$CHANNEL_NAME' (attempt #${COUNT}) ..."
+      peer channel join -b $CHANNEL_NAME.block
+      if [ $? -eq 0 ]; then
+         set -e
+         log "Peer $PEER_NAME successfully joined channel '$CHANNEL_NAME'"
+         return
+      fi
+      if [ $COUNT -gt $MAX_RETRY ]; then
+         fatalr "Peer $PEER_NAME failed to join channel '$CHANNEL_NAME' in $MAX_RETRY retries"
+      fi
+      COUNT=$((COUNT+1))
+      sleep 1
+   done
+}
+
 function installChaincode {
    switchToAdminIdentity
-   log "Installing marbles chaincode on $PEER_HOST ..."
+   log "Installing chaincode on $PEER_NAME ..."
    peer chaincode install -n marblescc -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/marbles02/go
 }
 
 function instantiateChaincode {
-   initPeerVars ${PORGS[1]} 1
    switchToAdminIdentity
    log "Instantiating marbles chaincode on $PEER_HOST ..."
    peer chaincode instantiate -C $CHANNEL_NAME -n marblescc -v 1.0 -c '{"Args":["init"]}' -P "$POLICY" $ORDERER_CONN_ARGS
 }
 
 function chaincodeInit {
-   # Invoke chaincode on the 1st peer of the 1st org
-   initPeerVars ${PORGS[0]} 2
-   switchToUserIdentity
-   log "Initialising marbles on $PEER_HOST ..."
+   log "Initialising marbles on $PEER_NAME ..."
    peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["initMarble","marble1","blue","21","edge"]}' $ORDERER_CONN_ARGS
    peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["initMarble","marble2","red","27","braendle"]}' $ORDERER_CONN_ARGS
 }
 
 function chaincodeQuery {
    set +e
-   log "Querying marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
-   sleep 1
+   log "Querying marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
    peer chaincode query -C $CHANNEL_NAME -n marblescc -c '{"Args":["readMarble","marble1"]}' >& log.txt
    cat log.txt
    peer chaincode query -C $CHANNEL_NAME -n marblescc -c '{"Args":["readMarble","marble2"]}' >& log.txt
    cat log.txt
-   log "Successfully queried marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
+   log "Successfully queried marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
 
 function transferMarble {
    set +e
-   log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
-   sleep 1
+   log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
    peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["transferMarble","marble2","edge"]}' $ORDERER_CONN_ARGS
-   log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
+   log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
 
 function makePolicy  {
@@ -152,6 +190,21 @@ function makePolicy  {
    done
    POLICY="${POLICY})"
    log "policy: $POLICY"
+}
+
+function finish {
+   if [ "$done" = true ]; then
+      log "See $RUN_LOGFILE for more details"
+      touch /$RUN_SUCCESS_FILE
+   else
+      log "Tests did not complete successfully; see $RUN_LOGFILE for more details"
+      touch /$RUN_FAIL_FILE
+   fi
+}
+
+function fatalr {
+   log "FATAL: $*"
+   exit 1
 }
 
 main
