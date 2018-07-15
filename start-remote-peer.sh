@@ -24,7 +24,7 @@ function main {
     updateRepo $HOME $REPO
     #makeDirs $DATADIR
     #copyScripts $HOME $REPO $DATADIR
-    source $SCRIPTS/env.sh
+    source $SCRIPTS/env-remote-peer.sh
     cd $HOME/$REPO
     source utilities.sh
     #makeDirsForOrg $DATADIR
