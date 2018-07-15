@@ -80,6 +80,7 @@ function main {
     genPeers
     genPeerJoinChannel
     genFabricTest
+    genFabricTestMarbles
     genInstallMarblesCC
     genLoadFabric
     genAddOrg
