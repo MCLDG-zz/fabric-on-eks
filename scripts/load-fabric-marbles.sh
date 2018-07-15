@@ -47,9 +47,9 @@ function main {
     instantiateChaincode
 
     #create a user
-    initPeerVars ${PORGS[0]} 1
+    initPeerVars $ORG 1
     switchToAdminIdentity
-    export USER_NAME=marbles-${PORGS[0]}
+    export USER_NAME=marbles-$ORG
     export USER_PASS=${USER_NAME}pw
     log "Enrolling with $CA_NAME as bootstrap identity ..."
     export FABRIC_CA_CLIENT_HOME=$HOME/cas/$CA_NAME
@@ -107,7 +107,7 @@ function cloneFabricSamples {
 
 # Enroll as a peer admin and create the channel
 function createChannel {
-   initPeerVars ${PORGS[0]} 1
+   initPeerVars $ORG 1
    switchToAdminIdentity
    log "Creating channel '$CHANNEL_NAME' with file '$CHANNEL_TX_FILE' on $ORDERER_HOST using connection '$ORDERER_CONN_ARGS'"
    peer channel create --logging-level=DEBUG -c $CHANNEL_NAME -f $CHANNEL_TX_FILE $ORDERER_CONN_ARGS
