@@ -20,12 +20,14 @@ set -e
 function main {
     echo "Beginning setup of remote peer on Hyperledger Fabric on Kubernetes ..."
     cd $HOME/$REPO
+    cp remote-peer/scripts/env.sh scripts/env.sh
+    cp remote-peer/scripts/env.sh $SCRIPTS
     source util-prep.sh
     updateRepo $HOME $REPO
     #makeDirs $DATADIR
     copyScripts $HOME $REPO $DATADIR
-    source remote-peer/scripts/env.sh
     cd $HOME/$REPO
+    source remote-peer/scripts/env.sh
     source utilities.sh
     #makeDirsForOrg $DATADIR
     genTemplates $HOME $REPO

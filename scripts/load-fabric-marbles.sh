@@ -15,8 +15,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-set +e
-
 source $(dirname "$0")/env.sh
 
 function main {
@@ -25,51 +23,28 @@ function main {
 
    cloneFabricSamples
 
-   log "Test network using marbles chaincode"
+   log "Load test Fabric Marbles"
 
    # Set ORDERER_PORT_ARGS to the args needed to communicate with the 1st orderer
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
-   initOrdererVars ${OORGS[0]} 2
+   initOrdererVars ${OORGS[0]} 1
    export ORDERER_PORT_ARGS="-o $ORDERER_HOST:$ORDERER_PORT --tls --cafile $CA_CHAINFILE --clientauth"
 #   export ORDERER_PORT_ARGS="-o $ORDERER_HOST:7050 --cafile $CA_CHAINFILE"
 
-   # Convert PEER_ORGS to an array named PORGS
-   IFS=', ' read -r -a PORGS <<< "$PEER_ORGS"
+    makePolicy
 
-   # Create the channel
-   createChannel
+    # Install chaincode on all peers in the org
+    export ORG=$PEERORG
+    local COUNT=1
+    while [[ "$COUNT" -le $NUM_PEERS ]]; do
+        initPeerVars $ORG $COUNT
+        installChaincode
+        COUNT=$((COUNT+1))
+    done
 
-   # All peers join the channel
-   for ORG in $PEER_ORGS; do
-      local COUNT=1
-      while [[ "$COUNT" -le $NUM_PEERS ]]; do
-         initPeerVars $ORG $COUNT
-         joinChannel
-         COUNT=$((COUNT+1))
-      done
-   done
-
-#   # Update the anchor peers
-#   for ORG in $PEER_ORGS; do
-#      initPeerVars $ORG 1
-#      switchToAdminIdentity
-#      log "Updating anchor peers for $PEER_NAME ..."
-#      peer channel update -c $CHANNEL_NAME -f $ANCHOR_TX_FILE $ORDERER_CONN_ARGS
-#   done
-
-   # Install chaincode on the peers
-   for ORG in $PEER_ORGS; do
-      while [[ "$COUNT" -le $NUM_PEERS ]]; do
-          initPeerVars $ORG 1
-          installChaincode
-          COUNT=$((COUNT+1))
-      done
-   done
-
-   # Instantiate chaincode
-   makePolicy
-   initPeerVars ${PORGS[0]} 1
-   instantiateChaincode
+    # Instantiate chaincode on the 1st peer of the org
+    initPeerVars $ORG 1
+    instantiateChaincode
 
     #create a user
     initPeerVars ${PORGS[0]} 1
@@ -88,29 +63,29 @@ function main {
     log "Registering user identity ${USER_NAME} with $CA_NAME"
     fabric-ca-client register -d --id.name $USER_NAME --id.secret $USER_PASS
 
-   # Query chaincode
+   # Init chaincode
    switchToUserIdentity
-   sleep 5
+   sleep 2
    chaincodeInit
-   sleep 5
-   chaincodeQuery
 
-   # Invoke chaincode
-   initPeerVars ${PORGS[0]} 1
-   export USER_NAME=marbles-${PORGS[0]}
-   export USER_PASS=${USER_NAME}pw
-   switchToUserIdentity
-   transferMarble
+    #Invoke and query the chaincode infinitely
+    while true; do
+        local COUNT=1
+        while [[ "$COUNT" -le $NUM_PEERS ]]; do
+            initPeerVars $ORG $COUNT
+            switchToAdminIdentity
+            log "Querying chaincode on $PEER_HOST ..."
+            chaincodeQuery
+            log "Transferring marble transaction to $PEER_HOST ..."
+            transferMarble
+            sleep 3
+            transferMarbleAgain
+            COUNT=$((COUNT+1))
+        done
+        sleep 3
+    done
 
-   # Query chaincode
-   sleep 10
-   initPeerVars ${PORGS[0]} 1
-   export USER_NAME=marbles-${PORGS[0]}
-   export USER_PASS=${USER_NAME}pw
-   switchToUserIdentity
-   chaincodeQuery
-
-   log "Congratulations! Marble chaincode tests ran successfully."
+   log "Congratulations! Marble load tests ran successfully."
 
    done=true
 }
@@ -195,6 +170,13 @@ function transferMarble {
    set +e
    log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
    peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["transferMarble","marble2","edge"]}' $ORDERER_CONN_ARGS
+   log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
+}
+
+function transferMarbleAgain {
+   set +e
+   log "Transferring marbles again in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
+   peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["transferMarble","marble2","braendle"]}' $ORDERER_CONN_ARGS
    log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
 

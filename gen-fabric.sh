@@ -83,6 +83,7 @@ function main {
     genFabricTestMarbles
     genInstallMarblesCC
     genLoadFabric
+    genLoadFabricMarbles
     genAddOrg
     genSignAddOrg
     genUpdateConfAddOrg
@@ -297,6 +298,14 @@ function genLoadFabric {
     for ORG in $PEER_ORGS; do
         getDomain $ORG
         sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-load-fabric.yaml > ${K8SYAML}/fabric-deployment-load-fabric-$ORG.yaml
+   done
+}
+
+function genLoadFabricMarbles {
+    log "Generating Load Fabric Marbles K8s YAML files"
+    for ORG in $PEER_ORGS; do
+        getDomain $ORG
+        sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-load-fabric-marbles.yaml > ${K8SYAML}/fabric-deployment-load-fabric-marbles-$ORG.yaml
    done
 }
 

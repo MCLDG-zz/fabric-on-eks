@@ -32,7 +32,7 @@ ORDERER_TYPE="kafka"
 # Names of the peer organizations.
 PEER_ORGS="org1"
 PEER_DOMAINS="org1"
-PEER_NAME="michaelpeer-${ORG}"
+PEER_NAME="michaelpeer-${PEER_ORGS}"
 
 # Number of peers in each peer organization
 NUM_PEERS=1
