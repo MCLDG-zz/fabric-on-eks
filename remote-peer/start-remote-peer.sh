@@ -50,7 +50,7 @@ function mergeEnv {
     #ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
     #these DNS endpoints as they are used by the remote peer
     cd $HOME/$REPO
-    start='^##--BEGIN REPLACE CONTENTS--##$'
+    start='^##--BEGIN REPLACE CONTENTS--##$'r
     end='^##--END REPLACE CONTENTS--##$'
     newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-peer/scripts/env-remote-peer.sh
         }; /$end/p; d }" $SCRIPTS/env.sh`
@@ -75,7 +75,7 @@ function genRemotePeers {
         while [[ "$COUNT" -le $NUM_PEERS ]]; do
             PORTCHAIN=$((PORTCHAIN+2))
             PORTEND=$((PORTCHAIN-1))
-            sed -e "s/%PEER_NAME%/${PEER_NAME}/g" -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORTEND%/${PORTEND}/g" -e "s/%PORTCHAIN%/${PORTCHAIN}/g" remote-peer/k8s/fabric-deployment-remote-peer.yaml > k8s/fabric-deployment-remote-peer$COUNT-$PEER_NAME-$ORG.yaml
+            sed -e "s/%PEER_PREFIX%/${PEER_PREFIX}/g" -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORTEND%/${PORTEND}/g" -e "s/%PORTCHAIN%/${PORTCHAIN}/g" remote-peer/k8s/fabric-deployment-remote-peer.yaml > k8s/fabric-deployment-remote-peer$COUNT-$PEER_NAME-$ORG.yaml
             COUNT=$((COUNT+1))
         done
         peerport=$((peerport+100))
