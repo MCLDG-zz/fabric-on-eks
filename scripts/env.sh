@@ -242,13 +242,15 @@ function initPeerVars {
    NUM=$2
    initOrgVars $ORG
    getDomain $ORG
-   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -eq 1 ]; then
+   PEER_NAME=${PEER_PREFIX}${NUM}-${ORG}
+   # When building a PROD network, the 1st peer of each org will be considered the anchor peer, and it's endpoint
+   # must be exposed via an NLB so that it can communicate with peers in other accounts/regions
+   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -eq 1 ] && [[ ! -v $"REMOTE_PEER" ]]; then
      getExternalAnchorPeer $ORG
      PEER_HOST=$EXTERNALANCHORPEER
    else
-     PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
+     PEER_HOST=${PEER_NAME}.${DOMAIN}
    fi
-   PEER_NAME=${PEER_PREFIX}${NUM}-${ORG}
    PEER_PASS=${PEER_NAME}pw
    PEER_NAME_PASS=${PEER_NAME}:${PEER_PASS}
    PEER_LOGFILE=$LOGDIR/${PEER_NAME}.log
@@ -285,7 +287,7 @@ function initPeerVars {
       export CORE_PEER_GOSSIP_BOOTSTRAP=peer1-${EXTERNALANCHORPEER}:${EXTERNALANCHORPORT}
    elif [ $FABRIC_NETWORK_TYPE == "POC" ] && [ $NUM -gt 1 ]; then
       # Point the non-anchor peers to the local anchor peer, which is always the 1st peer
-      export CORE_PEER_GOSSIP_BOOTSTRAP=peer${NUM}-${ORG}.${DOMAIN}:7051
+      export CORE_PEER_GOSSIP_BOOTSTRAP=${PEER_NAME}.${DOMAIN}:7051
    fi
    export ORDERER_CONN_ARGS="$ORDERER_PORT_ARGS --keyfile $CORE_PEER_TLS_CLIENTKEY_FILE --certfile $CORE_PEER_TLS_CLIENTCERT_FILE"
 #   export ORDERER_CONN_ARGS="$ORDERER_PORT_ARGS"

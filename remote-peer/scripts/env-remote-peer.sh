@@ -42,3 +42,5 @@ PEER_PREFIX="michaelpeer"
 
 # Number of peers in each peer organization
 NUM_PEERS=1
+
+REMOTE_PEER=true
