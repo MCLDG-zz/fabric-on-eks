@@ -10,6 +10,8 @@
 # The following variables describe the topology and may be modified to provide
 # different organization names or the number of peers in each peer organization.
 #####################################################################################
+##--BEGIN REPLACE CONTENTS--##
+# This section may be replaced when creating a remote peer. See `start-remote-peer.sh`
 
 # Type of network. Options are: POC or PROD
 # If FABRIC_NETWORK_TYPE="PROD" I will generate NLB (network load balancers) to expose the orderers and anchor peers
@@ -36,6 +38,7 @@ PEER_DOMAINS="org1 org2"
 # Number of peers in each peer organization
 NUM_PEERS=2
 
+##--END REPLACE CONTENTS--##
 #####################################################################################
 # The remainder of this file contains variables which typically would not be changed.
 #####################################################################################
