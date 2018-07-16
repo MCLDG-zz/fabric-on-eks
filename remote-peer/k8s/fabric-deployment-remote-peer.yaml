@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: %DOMAIN%
-  name: %PEER_NAME%
+  name: %PEER_PREFIX%%NUM%-%ORG%
 spec:
   replicas: 1
   strategy: {}
@@ -26,21 +26,21 @@ spec:
        app: hyperledger
        role: peer
        org: %ORG%
-       name: %PEER_NAME%
+       name: %PEER_PREFIX%%NUM%-%ORG%
   template:
     metadata:
       labels:
        app: hyperledger
        role: peer
        org: %ORG%
-       name: %PEER_NAME%
+       name: %PEER_PREFIX%%NUM%-%ORG%
     spec:
      containers:
        - name: couchdb
          image: hyperledger/fabric-couchdb:x86_64-1.1.0-preview
          ports:
           - containerPort: 5984
-       - name: %PEER_NAME%
+       - name: %PEER_PREFIX%%NUM%-%ORG%
          image: hyperledger/fabric-ca-peer:x86_64-1.1.0
          env:
           - name: FABRIC_CA_CLIENT_HOME
@@ -48,21 +48,21 @@ spec:
           - name: FABRIC_CA_CLIENT_TLS_CERTFILES
             value: /data/%ORG%-ca-chain.pem
           - name: ENROLLMENT_URL
-            value: https://%PEER_NAME%:%PEER_NAME%pw@ica-%ORG%.%DOMAIN%:7054
+            value: https://%PEER_PREFIX%%NUM%-%ORG%:%PEER_PREFIX%%NUM%-%ORG%pw@ica-%ORG%.%DOMAIN%:7054
           - name: PEER_NAME
-            value: %PEER_NAME%
+            value: %PEER_PREFIX%%NUM%-%ORG%
           - name: PEER_HOME
             value: /opt/gopath/src/github.com/hyperledger/fabric/peer
           - name: PEER_HOST
-            value: %PEER_NAME%.%DOMAIN%
+            value: %PEER_PREFIX%%NUM%-%ORG%.%DOMAIN%
           - name: PEER_NAME_PASS
-            value: %PEER_NAME%:%PEER_NAME%pw
+            value: %PEER_PREFIX%%NUM%-%ORG%:%PEER_PREFIX%%NUM%-%ORG%pw
           - name: CORE_PEER_ADDRESSAUTODETECT
             value: "true"
           - name: CORE_PEER_ID
-            value: %PEER_NAME%
+            value: %PEER_PREFIX%%NUM%-%ORG%
           - name: CORE_PEER_ADDRESS
-            value: %PEER_NAME%.%DOMAIN%:7051
+            value: %PEER_PREFIX%%NUM%-%ORG%.%DOMAIN%:7051
           - name: CORE_PEER_LOCALMSPID
             value: %ORG%MSP
           - name: CORE_PEER_MSPCONFIGPATH
@@ -86,15 +86,15 @@ spec:
           - name: CORE_PEER_TLS_CLIENTROOTCAS_FILES
             value: /data/%ORG%-ca-chain.pem
           - name: CORE_PEER_TLS_CLIENTCERT_FILE
-            value: /data/tls/%PEER_NAME%-client.crt
+            value: /data/tls/%PEER_PREFIX%%NUM%-%ORG%-client.crt
           - name: CORE_PEER_TLS_CLIENTKEY_FILE
-            value: /data/tls/%PEER_NAME%-client.key
+            value: /data/tls/%PEER_PREFIX%%NUM%-%ORG%-client.key
           - name: CORE_PEER_GOSSIP_USELEADERELECTION
             value: "true"
           - name: CORE_PEER_GOSSIP_ORGLEADER
             value: "false"
           - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
-            value: %PEER_NAME%.%DOMAIN%:7051
+            value: %PEER_PREFIX%%NUM%-%ORG%.%DOMAIN%:7051
           - name: CORE_PEER_GOSSIP_SKIPHANDSHAKE
             value: "true"
           - name: CORE_PEER_CHAINCODELISTENADDRESS
@@ -138,13 +138,13 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: %DOMAIN%
-  name: %PEER_NAME%
+  name: %PEER_PREFIX%%NUM%-%ORG%
 spec:
  selector:
    app: hyperledger
    role: peer
    org: %ORG%
-   name: %PEER_NAME%
+   name: %PEER_PREFIX%%NUM%-%ORG%
  type: NodePort
  ports:
    - name: endpoint
