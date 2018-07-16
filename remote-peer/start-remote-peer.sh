@@ -23,23 +23,23 @@ set -e
 function main {
     echo "Beginning setup of remote peer on Hyperledger Fabric on Kubernetes ..."
     cd $HOME/$REPO
-    mergeEnv
-    source ../util-prep.sh
+    source util-prep.sh
     updateRepo $HOME $REPO
+    mergeEnv
     #makeDirs $DATADIR
     copyScripts $HOME $REPO $DATADIR
     cd $HOME/$REPO
     source scripts/env.sh
-    source ../utilities.sh
+    source utilities.sh
     #makeDirsForOrg $DATADIR
     genTemplates $HOME $REPO
-    genRemotePeers
+    genRemotePeers $HOME $REPO
     createNamespaces $HOME $REPO
     startPVC $HOME $REPO
     startRCA $HOME $REPO
     startICA $HOME $REPO
     startRegisterPeers $HOME $REPO
-    startPeers $HOME $REPO
+    startRemotePeers $HOME $REPO
     whatsRunning
     echo "Setup of remote peer on Hyperledger Fabric on Kubernetes complete"
 }
@@ -49,14 +49,22 @@ function mergeEnv {
     #the env.sh in $SCRIPTS will have been updated with the DNS of the various endpoints, such as ORDERER and
     #ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
     #these DNS endpoints as they are used by the remote peer
+    cd $HOME/$REPO
     start='^##--BEGIN REPLACE CONTENTS--##$'
     end='^##--END REPLACE CONTENTS--##$'
-    sed -e "/$start/,/$end/{ /$start/{p; r remote-peer/scripts/env-remote-peer.sh
-        }; /$end/p; d }" $SCRIPTS/env.sh
+    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-peer/scripts/env-remote-peer.sh
+        }; /$end/p; d }" $SCRIPTS/env.sh`
+    echo "$newfile" > $SCRIPTS/env.sh
     cp $SCRIPTS/env.sh scripts/env.sh
 }
 
 function genRemotePeers {
+    if [ $# -ne 2 ]; then
+        echo "Usage: genRemotePeers <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
     cd $HOME/$REPO
     peerport=30750
     log "Generating Remote Peer K8s YAML files"
@@ -72,6 +80,26 @@ function genRemotePeers {
         done
         peerport=$((peerport+100))
    done
+}
+
+function startRemotePeers {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startRemotePeers <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Starting Remote Peers in K8s"
+
+    for ORG in $PEER_ORGS; do
+      local COUNT=1
+      while [[ "$COUNT" -le $NUM_PEERS ]]; do
+        kubectl apply -f $REPO/k8s/fabric-deployment-remote-peer$COUNT-$PEER_NAME-$ORG.yaml
+        COUNT=$((COUNT+1))
+      done
+    done
+    confirmDeployments
 }
 
 SDIR=$(dirname "$0")

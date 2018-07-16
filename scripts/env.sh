@@ -34,6 +34,8 @@ ORDERER_TYPE="kafka"
 # Names of the peer organizations.
 PEER_ORGS="org1 org2"
 PEER_DOMAINS="org1 org2"
+PEER_PREFIX="peer"
+PEER_NAME=${PEER_PREFIX}${NUM}-${ORG}
 
 # Number of peers in each peer organization
 NUM_PEERS=2
@@ -247,7 +249,6 @@ function initPeerVars {
    else
      PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    fi
-   PEER_NAME=peer${NUM}-${ORG}
    PEER_PASS=${PEER_NAME}pw
    PEER_NAME_PASS=${PEER_NAME}:${PEER_PASS}
    PEER_LOGFILE=$LOGDIR/${PEER_NAME}.log
@@ -256,7 +257,7 @@ function initPeerVars {
 
    export FABRIC_CA_CLIENT=$MYHOME
    #export CORE_PEER_ID=$PEER_HOST
-   export CORE_PEER_ID=peer${NUM}-${ORG}.${DOMAIN}
+   export CORE_PEER_ID=${PEER_NAME}.${DOMAIN}
    export CORE_PEER_ADDRESS=$PEER_HOST:7051
 #   export CORE_PEER_CHAINCODELISTENADDRESS=$PEER_HOST:7052
    export CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
