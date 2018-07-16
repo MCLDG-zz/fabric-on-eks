@@ -35,7 +35,6 @@ ORDERER_TYPE="kafka"
 PEER_ORGS="org1 org2"
 PEER_DOMAINS="org1 org2"
 PEER_PREFIX="peer"
-PEER_NAME=${PEER_PREFIX}${NUM}-${ORG}
 
 # Number of peers in each peer organization
 NUM_PEERS=2
@@ -249,6 +248,7 @@ function initPeerVars {
    else
      PEER_HOST=peer${NUM}-${ORG}.${DOMAIN}
    fi
+   PEER_NAME=${PEER_PREFIX}${NUM}-${ORG}
    PEER_PASS=${PEER_NAME}pw
    PEER_NAME_PASS=${PEER_NAME}:${PEER_PASS}
    PEER_LOGFILE=$LOGDIR/${PEER_NAME}.log

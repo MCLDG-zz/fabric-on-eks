@@ -39,7 +39,6 @@ ORDERER_TYPE="kafka"
 PEER_ORGS="org1"
 PEER_DOMAINS="org1"
 PEER_PREFIX="michaelpeer"
-PEER_NAME=${PEER_PREFIX}${NUM}-${ORG}
 
 # Number of peers in each peer organization
 NUM_PEERS=1
