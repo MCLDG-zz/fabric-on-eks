@@ -43,8 +43,8 @@ function main {
 #    startRemotePeers $HOME $REPO
 #    startRemoteTest $HOME $REPO
 #    whatsRunning
-#    echo "Setup of remote peer on Hyperledger Fabric on Kubernetes complete"
-complete}
+    echo "Setup of remote org on Hyperledger Fabric on Kubernetes complete"
+}
 
 function mergeEnv {
     #merge the contents of the env.sh file
