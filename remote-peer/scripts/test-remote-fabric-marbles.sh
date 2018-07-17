@@ -53,7 +53,7 @@ function main {
    for ORG in $PEER_ORGS; do
       local COUNT=1
       while [[ "$COUNT" -le $NUM_PEERS ]]; do
-          initPeerVars $ORG 1
+          initPeerVars $ORG $COUNT
           installChaincode
           COUNT=$((COUNT+1))
       done
