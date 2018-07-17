@@ -49,13 +49,6 @@ function main {
       done
    done
 
-   # Update the anchor peers
-   for ORG in $PEER_ORGS; do
-      initPeerVars $ORG 1
-      switchToAdminIdentity
-      updateAnchorPeers
-   done
-
    # Install chaincode on the peers
    for ORG in $PEER_ORGS; do
       local COUNT=1
@@ -72,6 +65,11 @@ function main {
    switchToAdminIdentity
    instantiateChaincode
 
+   # Create a user
+   export USER_NAME=${CHAINCODE_NAME}-${PORGS[0]}
+   export USER_PASS=${USER_NAME}pw
+   createUser
+
    # Query chaincode
    switchToUserIdentity
    sleep 5
@@ -81,12 +79,16 @@ function main {
 
    # Invoke chaincode
    initPeerVars ${PORGS[0]} 1
+   export USER_NAME=${CHAINCODE_NAME}-${PORGS[0]}
+   export USER_PASS=${USER_NAME}pw
    switchToUserIdentity
    transferMarble
 
    # Query chaincode
    sleep 10
    initPeerVars ${PORGS[0]} 1
+   export USER_NAME=${CHAINCODE_NAME}-${PORGS[0]}
+   export USER_PASS=${USER_NAME}pw
    switchToUserIdentity
    chaincodeQuery
 
@@ -196,6 +198,20 @@ function makePolicy  {
    done
    POLICY="${POLICY})"
    log "policy: $POLICY"
+}
+
+function createUser {
+    log "Enrolling with $CA_NAME as bootstrap identity ..."
+    export FABRIC_CA_CLIENT_HOME=$HOME/cas/$CA_NAME
+    export FABRIC_CA_CLIENT_TLS_CERTFILES=$CA_CHAINFILE
+    fabric-ca-client enroll -d -u https://$CA_ADMIN_USER_PASS@$CA_HOST:7054
+
+    log "Registering admin identity with $CA_NAME"
+    # The admin identity has the "admin" attribute which is added to ECert by default
+    fabric-ca-client register -d --id.name $ADMIN_NAME --id.secret $ADMIN_PASS --id.attrs "hf.Registrar.Roles=client,hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,admin=true:ecert,abac.init=true:ecert"
+
+    log "Registering user identity ${USER_NAME} with $CA_NAME"
+    fabric-ca-client register -d --id.name $USER_NAME --id.secret $USER_PASS
 }
 
 function finish {

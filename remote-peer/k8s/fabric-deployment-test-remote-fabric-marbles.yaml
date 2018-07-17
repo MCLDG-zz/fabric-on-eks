@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: %DOMAIN%
-  name: test-fabric
+  name: test-fabric-marbles
 spec:
   replicas: 1
   strategy: {}
@@ -26,23 +26,23 @@ spec:
        app: hyperledger
        role: client
        org: %ORG%
-       name: test-fabric
+       name: test-fabric-marbles
   template:
     metadata:
       labels:
        app: hyperledger
        role: client
        org: %ORG%
-       name: test-fabric
+       name: test-fabric-marbles
     spec:
      containers:
-       - name: test-fabric
+       - name: test-fabric-marbles
          image: hyperledger/fabric-ca-tools:x86_64-1.1.0
          env:
           - name: GOPATH
             value: /opt/gopath
          command: ["sh"]
-         args:  ["-c", "/scripts/test-fabric.sh 2>&1; while true; do sleep 90; done;"]
+         args:  ["-c", "/scripts/test-remote-fabric-marbles.sh 2>&1; while true; do sleep 90; done;"]
          volumeMounts:
           - mountPath: /scripts
             name: rca-scripts

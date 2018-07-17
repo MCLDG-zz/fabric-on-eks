@@ -34,12 +34,14 @@ function main {
     #makeDirsForOrg $DATADIR
     genTemplates $HOME $REPO
     genRemotePeers $HOME $REPO
+    genRemoteTest $HOME $REPO
     createNamespaces $HOME $REPO
     startPVC $HOME $REPO
     startRCA $HOME $REPO
     startICA $HOME $REPO
     startRegisterPeers $HOME $REPO
     startRemotePeers $HOME $REPO
+    startRemoteTest $HOME $REPO
     whatsRunning
     echo "Setup of remote peer on Hyperledger Fabric on Kubernetes complete"
 }
@@ -82,6 +84,22 @@ function genRemotePeers {
    done
 }
 
+function genRemoteTest {
+    if [ $# -ne 2 ]; then
+        echo "Usage: genRemoteTest <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME/$REPO
+    log "Generating Remote Test K8s YAML files"
+    IFS=', ' read -r -a PORGS <<< "$PEER_ORGS"
+    ORG=${PORGS[0]}
+    getDomain $ORG
+    sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" remote-peer/k8s/fabric-deployment-test-remote-fabric-marbles.yaml > k8s/fabric-deployment-test-remote-fabric-marbles-$ORG.yaml
+    cp remote-peer/scripts/test-remote-fabric-marbles.sh $SCRIPTS
+}
+
 function startRemotePeers {
     if [ $# -ne 2 ]; then
         echo "Usage: startRemotePeers <home-dir> <repo-name>"
@@ -99,6 +117,22 @@ function startRemotePeers {
         COUNT=$((COUNT+1))
       done
     done
+    confirmDeployments
+}
+
+function startRemoteTest {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startRemoteTest <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Starting Remote Test in K8s"
+
+    IFS=', ' read -r -a PORGS <<< "$PEER_ORGS"
+    ORG=${PORGS[0]}
+    kubectl apply -f $REPO/k8s/fabric-deployment-test-remote-fabric-marbles-$ORG.yaml
     confirmDeployments
 }
 

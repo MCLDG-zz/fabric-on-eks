@@ -548,7 +548,7 @@ function startTest {
     local REPO=$2
     cd $HOME
     log "Starting Test Cases in K8s"
-    kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric.yaml
+    kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
     confirmDeployments
 }
 

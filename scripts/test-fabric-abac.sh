@@ -18,14 +18,16 @@
 set -e
 
 source $(dirname "$0")/env.sh
+CHAINCODE_NAME=abaccc
 
+#this function creates a channel and deploys the abac chaincode (from fabric-samples), then runs a few test cases
 function main {
 
    done=false
 
    cloneFabricSamples
 
-   log "The docker 'run' container has started"
+   log "Test network using $CHAINCODE_NAME chaincode"
 
    # Set ORDERER_PORT_ARGS to the args needed to communicate with the 1st orderer
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
@@ -53,8 +55,7 @@ function main {
    for ORG in $PEER_ORGS; do
       initPeerVars $ORG 1
       switchToAdminIdentity
-      log "Updating anchor peers for $PEER_HOST ..."
-      peer channel update -c $CHANNEL_NAME -f $ANCHOR_TX_FILE $ORDERER_CONN_ARGS
+      updateAnchorPeers
    done
 
    # Install chaincode on the 1st peer in each org
@@ -67,8 +68,7 @@ function main {
    makePolicy
    initPeerVars ${PORGS[1]} 1
    switchToAdminIdentity
-   log "Instantiating chaincode on $PEER_HOST ..."
-   peer chaincode instantiate -C $CHANNEL_NAME -n mycc -v 1.0 -c '{"Args":["init","a","100","b","200"]}' -P "$POLICY" $ORDERER_CONN_ARGS
+   instantiateChaincode
 
    # Query chaincode from the 1st peer of the 1st org
    initPeerVars ${PORGS[0]} 1
@@ -78,8 +78,7 @@ function main {
    # Invoke chaincode on the 1st peer of the 1st org
    initPeerVars ${PORGS[0]} 1
    switchToUserIdentity
-   log "Sending invoke transaction to $PEER_HOST ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n mycc -c '{"Args":["invoke","a","b","10"]}' $ORDERER_CONN_ARGS
+   chaincodeInvoke
 
    ## Install chaincode on 2nd peer of 2nd org
    initPeerVars ${PORGS[1]} 2
@@ -108,10 +107,10 @@ function main {
    switchToUserIdentity
    queryAsRevokedUser
    if [ "$?" -ne 0 ]; then
-      log "The revoked user $USER_NAME should have failed to query the chaincode in the channel '$CHANNEL_NAME'"
+      log "The revoked user $USER_NAME should have failed to query the $CHAINCODE_NAME chaincode in the channel '$CHANNEL_NAME'"
       exit 1
    fi
-   log "Congratulations! The tests ran successfully."
+   log "Congratulations! $CHAINCODE_NAME chaincode tests ran successfully."
 
    done=true
 }
@@ -162,6 +161,28 @@ function joinChannel {
    done
 }
 
+function updateAnchorPeers {
+    log "Updating anchor peers for $PEER_HOST ..."
+    peer channel update -c $CHANNEL_NAME -f $ANCHOR_TX_FILE $ORDERER_CONN_ARGS
+}
+
+function installChaincode {
+   switchToAdminIdentity
+   log "Installing $CHAINCODE_NAME chaincode on $PEER_HOST ..."
+   peer chaincode install -n $CHAINCODE_NAME -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/abac/go
+}
+
+function instantiateChaincode {
+   switchToAdminIdentity
+   log "Instantiating $CHAINCODE_NAME chaincode on $PEER_HOST ..."
+   peer chaincode instantiate -C $CHANNEL_NAME -n $CHAINCODE_NAME -v 1.0 -c '{"Args":["init","a","100","b","200"]}' -P "$POLICY" $ORDERER_CONN_ARGS
+}
+
+function chaincodeInvoke {
+   log "Initialising $CHAINCODE_NAME on $PEER_NAME ..."
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["invoke","a","b","10"]}' $ORDERER_CONN_ARGS
+}
+
 function chaincodeQuery {
    if [ $# -ne 1 ]; then
       fatalr "Usage: chaincodeQuery <expected-value>"
@@ -173,7 +194,7 @@ function chaincodeQuery {
    # Continue to poll until we get a successful response or reach QUERY_TIMEOUT
    while test "$(($(date +%s)-starttime))" -lt "$QUERY_TIMEOUT"; do
       sleep 1
-      peer chaincode query -C $CHANNEL_NAME -n mycc -c '{"Args":["query","a"]}' >& log.txt
+      peer chaincode query -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["query","a"]}' >& log.txt
       VALUE=$(cat log.txt | awk '/Query Result/ {print $NF}')
       if [ $? -eq 0 -a "$VALUE" = "$1" ]; then
          log "Query of channel '$CHANNEL_NAME' on peer '$PEER_HOST' was successful"
@@ -194,7 +215,7 @@ function queryAsRevokedUser {
    # Continue to poll until we get an expected response or reach QUERY_TIMEOUT
    while test "$(($(date +%s)-starttime))" -lt "$QUERY_TIMEOUT"; do
       sleep 1
-      peer chaincode query -C $CHANNEL_NAME -n mycc -c '{"Args":["query","a"]}' >& log.txt
+      peer chaincode query -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["query","a"]}' >& log.txt
       if [ $? -ne 0 ]; then
         err=$(cat log.txt | grep "access denied")
         if [ "$err" != "" ]; then
@@ -224,12 +245,6 @@ function makePolicy  {
    done
    POLICY="${POLICY})"
    log "policy: $POLICY"
-}
-
-function installChaincode {
-   switchToAdminIdentity
-   log "Installing chaincode on $PEER_HOST ..."
-   peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/abac/go
 }
 
 function fetchConfigBlock {
