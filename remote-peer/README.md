@@ -91,34 +91,38 @@ A couple of configuration steps are required before starting the new peer:
 * Edit the file `remote-peer/scripts/env-remote-peer.sh`. Update the following fields:
     * Set PEER_ORGS to one of the organisations in the Fabric network. Example: PEER_ORGS="org1"
     * Set PEER_DOMAINS to one of the domains in the Fabric network. Example: PEER_DOMAINS="org1"
-    * Set PEER_NAME to any name you choose. Try to make this unique within the network. Example: PEER_NAME="michaelpeer"
+    * Set PEER_PREFIX to any name you choose. This will become the name of your peer on the network. 
+      Try to make this unique within the network. Example: PEER_PREFIX="michaelpeer"
 * Do not change anything else in the file
 
-
-
-We are now ready to start the new peer.
-If you are creating a brand new peer OR restarting a crashed peer, start the peer. On the EC2 instance in the 
-new account created above, in the repo directory, run:
+We are now ready to start the new peer. On the EC2 instance in the new account created above, in the repo directory, run:
 
 ```bash
-start-remote-peer.sh
+
+./remote-peer/start-remote-peer.sh
 ```
 
-This will register and start the peers, but not the orderer. The peer will start, but will not be joined to any 
-channels. At this point the peer has little use as it does not maintain any ledger state.
+This will do the following:
+
+* Create a merged copy of env.sh on the EFS drive (i.e. in /opt/share/rca-scripts), which includes the selections you
+made above (e.g. PEER_PREFIX)
+* Generate a kubernetes deployment YAML for the remote peer
+* Start a local certificate authority (CA). You'll need this to generate a new user for your peer
+* Register your new peer with the CA
+* Start the new peer
+
+The peer will start, but will not be joined to any channels. At this point the peer has little use as it does not 
+maintain any ledger state. To start building a ledger on the peer we need to join a channel.
 
 ### Join the peer to a channel
-I've created the script, 'peer-join-channel.sh' to join the peer to the channel and install the chaincode. There is a 
-matching YAML in k8s-templates (k8s-templates/fabric-deployment-peer-join-channel.yaml) that will be used to generate a 
-single YAML in the k8s folder (by gen-fabric.sh). This YAML is named `k8s/fabric-deployment-peer-join-channel-org1.yaml`,
-and once it is deployed to K8s it will invoke 'peer-join-channel.sh' and join the remote peer to the Fabric channel.
-
-If you want to join a different peer or org to the channel besides the one generated for you in
-`k8s/fabric-deployment-peer-join-channel-org1.yaml`, simply edit this file and change the peer and domain details. Then:
+I've created a Kubernetes deployment YAML that will deploy a POD to execute a script, `test-fabric-marbles`, that will
+join the peer created above to a channel (the channel name is in env.sh), install the marbles demo chaincode, and 
+execute a couple of test transactions. Run the following:
 
 ```bash
-kubectl apply -f k8s/fabric-deployment-peer-join-channel-org1.yaml
+kubectl apply -f k8s/fabric-deployment-test-fabric-marbles.yaml
 ```
 
-This will connect the new peer to the channel. You can then check the peer logs to ensure
-all the TX are being sent to the new peer.
+This will connect the new peer to the channel. You should then check the peer logs to ensure
+all the TX are being sent to the new peer. If there are existing blocks on the channel you should see them
+replicating to the new peer. Look for messages in the log file such as `Channel [mychannel]: Committing block [14385] to storage`.

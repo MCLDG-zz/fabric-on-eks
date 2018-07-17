@@ -50,7 +50,7 @@ function mergeEnv {
     #ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
     #these DNS endpoints as they are used by the remote peer
     cd $HOME/$REPO
-    start='^##--BEGIN REPLACE CONTENTS--##$'r
+    start='^##--BEGIN REPLACE CONTENTS--##$'
     end='^##--END REPLACE CONTENTS--##$'
     newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-peer/scripts/env-remote-peer.sh
         }; /$end/p; d }" $SCRIPTS/env.sh`

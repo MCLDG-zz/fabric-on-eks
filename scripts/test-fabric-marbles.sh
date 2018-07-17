@@ -31,7 +31,6 @@ function main {
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
    initOrdererVars ${OORGS[0]} 2
    export ORDERER_PORT_ARGS="-o $ORDERER_HOST:$ORDERER_PORT --tls --cafile $CA_CHAINFILE --clientauth"
-#   export ORDERER_PORT_ARGS="-o $ORDERER_HOST:7050 --cafile $CA_CHAINFILE"
 
    # Convert PEER_ORGS to an array named PORGS
    IFS=', ' read -r -a PORGS <<< "$PEER_ORGS"
@@ -49,16 +48,17 @@ function main {
       done
    done
 
-#   # Update the anchor peers
-#   for ORG in $PEER_ORGS; do
-#      initPeerVars $ORG 1
-#      switchToAdminIdentity
-#      log "Updating anchor peers for $PEER_NAME ..."
-#      peer channel update -c $CHANNEL_NAME -f $ANCHOR_TX_FILE $ORDERER_CONN_ARGS
-#   done
+   # Update the anchor peers
+   for ORG in $PEER_ORGS; do
+      initPeerVars $ORG 1
+      switchToAdminIdentity
+      log "Updating anchor peers for $PEER_NAME ..."
+      peer channel update -c $CHANNEL_NAME -f $ANCHOR_TX_FILE $ORDERER_CONN_ARGS
+   done
 
    # Install chaincode on the peers
    for ORG in $PEER_ORGS; do
+      local COUNT=1
       while [[ "$COUNT" -le $NUM_PEERS ]]; do
           initPeerVars $ORG 1
           installChaincode

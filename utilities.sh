@@ -284,6 +284,7 @@ function stopTest {
     cd $HOME
     log "Stopping Test Cases in K8s"
     kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric.yaml
+    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
     log "Confirm Test Case pod has stopped"
     confirmDeploymentsStopped test-fabric
 }

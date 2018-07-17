@@ -21,7 +21,7 @@ function main {
     set +e
     stopTest $HOME $REPO
     for DELETE_ORG in $ORGS; do
-        stopPeers $HOME $REPO $DELETE_ORG
+        stopRemotePeers $HOME $REPO $DELETE_ORG
         stopRegisterPeers $HOME $REPO $DELETE_ORG
         stopICA $HOME $REPO $DELETE_ORG
         stopRCA $HOME $REPO $DELETE_ORG
@@ -35,10 +35,30 @@ function main {
     log "Hyperledger Fabric remote peer on Kubernetes stopped"
 }
 
+function stopRemotePeers {
+    if [ $# -ne 3 ]; then
+        echo "Usage: startRemotePeers <home-dir> <repo-name> <delete-org>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    local ORG=$3
+    cd $HOME
+    log "Deleting Remote Peers in K8s"
+
+    local COUNT=1
+    while [[ "$COUNT" -le $NUM_PEERS ]]; do
+        kubectl delete -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
+        COUNT=$((COUNT+1))
+    done
+    confirmDeploymentsStopped test-fabric
+}
+
 SDIR=$(dirname "$0")
-SCRIPTS=$DATA/rca-scripts
-source $SCRIPTS/env.sh
-source $SDIR/utilities.sh
 DATA=/opt/share/
+SCRIPTS=$DATA/rca-scripts
 REPO=fabric-on-eks
+cd $HOME/$REPO
+source $SCRIPTS/env.sh
+source utilities.sh
 main
