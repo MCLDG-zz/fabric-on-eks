@@ -54,7 +54,7 @@ function mergeEnv {
     cd $HOME/$REPO
     start='^##--BEGIN REPLACE CONTENTS--##$'
     end='^##--END REPLACE CONTENTS--##$'
-    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-peer/scripts/env-remote-org.sh
+    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-org/scripts/env-remote-org.sh
         }; /$end/p; d }" $SCRIPTS/env.sh`
     echo "$newfile" > $SCRIPTS/env.sh
     cp $SCRIPTS/env.sh scripts/env.sh
