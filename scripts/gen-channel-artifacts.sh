@@ -90,7 +90,7 @@ Profiles:
       # Available types are \"solo\" and \"kafka\"
       OrdererType: $ORDERER_TYPE
       Addresses:
-$EXTERNAL_ORDERER_ADDRESSES"
+# $EXTERNAL_ORDERER_ADDRESSES"  # should be ok if we have the endpoints below. One of the orderers is local, the other exposed via NLB
 
    for ORG in $ORDERER_ORGS; do
       local COUNT=1
