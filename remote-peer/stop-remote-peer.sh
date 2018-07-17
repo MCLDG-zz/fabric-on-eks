@@ -21,6 +21,7 @@ function main {
     set +e
     stopTest $HOME $REPO
     for DELETE_ORG in $ORGS; do
+        stopRemoteTest $HOME $REPO $DELETE_ORG
         stopRemotePeers $HOME $REPO $DELETE_ORG
         stopRegisterPeers $HOME $REPO $DELETE_ORG
         stopICA $HOME $REPO $DELETE_ORG
@@ -37,7 +38,7 @@ function main {
 
 function stopRemotePeers {
     if [ $# -ne 3 ]; then
-        echo "Usage: startRemotePeers <home-dir> <repo-name> <delete-org>"
+        echo "Usage: stopRemotePeers <home-dir> <repo-name> <delete-org>"
         exit 1
     fi
     local HOME=$1
@@ -51,7 +52,23 @@ function stopRemotePeers {
         kubectl delete -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
         COUNT=$((COUNT+1))
     done
-    confirmDeploymentsStopped test-fabric
+    confirmDeploymentsStopped remote-peer
+}
+
+function stopRemoteTest {
+    if [ $# -ne 3 ]; then
+        echo "Usage: stopRemoteTest <home-dir> <repo-name> <delete-org>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    local ORG=$3
+    cd $HOME
+    log "Deleting Remote Test in K8s"
+
+    kubectl delete -f $REPO/k8s/fabric-deployment-test-remote-fabric-marbles-$ORG.yaml
+    confirmDeploymentsStopped test-remote-fabric
+
 }
 
 SDIR=$(dirname "$0")
