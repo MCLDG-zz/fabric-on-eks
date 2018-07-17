@@ -26,12 +26,12 @@ function main {
     source util-prep.sh
     updateRepo $HOME $REPO
     mergeEnv
-    #makeDirs $DATADIR
+    makeDirs $DATADIR
     copyScripts $HOME $REPO $DATADIR
     cd $HOME/$REPO
     source scripts/env.sh
     source utilities.sh
-    #makeDirsForOrg $DATADIR
+    makeDirsForOrg $DATADIR
     genTemplates $HOME $REPO
     genRemotePeers $HOME $REPO
     genRemoteTest $HOME $REPO
