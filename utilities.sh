@@ -443,8 +443,8 @@ function startOrdererNLB {
             sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
             #Store the NLB endpoint for the 2nd orderer
             echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${SCRIPTS}/env.sh"
-            sed -e "s/EXTERNALORDERERHOSTNAME=\"\"/EXTERNALORDERERHOSTNAME=\"${EXTERNALORDERERHOSTNAME}\"/g" -i $SCRIPTS/env.sh
-            sed -e "s/EXTERNALORDERERPORT=\"\"/EXTERNALORDERERPORT=\"${EXTERNALORDERERPORT}\"/g" -i $SCRIPTS/env.sh
+            sed -e "s/EXTERNALORDERERHOSTNAME=\"\"/EXTERNALORDERERHOSTNAME=\"${NLBHOSTNAME}\"/g" -i $SCRIPTS/env.sh
+            sed -e "s/EXTERNALORDERERPORT=\"\"/EXTERNALORDERERPORT=\"${NLBHOSTPORT}\"/g" -i $SCRIPTS/env.sh
         fi
         COUNT=$((COUNT+1))
       done
