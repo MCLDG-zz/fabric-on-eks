@@ -86,18 +86,18 @@ EOF
 
 SDIR=$(dirname "$0")
 SCRIPTS=$DATA/rca-scripts
-source $SDIR/gen-env-file.sh
+REPO=fabric-on-eks
+source $HOME/$REPO/gen-env-file.sh
 genNewEnvAddOrg $NEW_ORG $NEW_DOMAIN $SCRIPTS
 sudo cp $SCRIPTS/envaddorgs.sh $SCRIPTS/env.sh
 source $SCRIPTS/env.sh
-source $SDIR/util-prep.sh
-source $SDIR/utilities.sh
-source $SDIR/signorgconfig.sh
-source $SDIR/installchaincode.sh
+source $HOME/$REPO/util-prep.sh
+source $HOME/$REPO/utilities.sh
+source $HOME/$REPO/signorgconfig.sh
+source $HOME/$REPO/installchaincode.sh
 log "Step3: PEER_ORGS at start of addorg.sh: '$PEER_ORGS'"
 log "Step3: PEER_DOMAINS at start of addorg.sh: '$PEER_DOMAINS'"
 DATA=/opt/share/
-REPO=fabric-on-eks
 main
 
 
