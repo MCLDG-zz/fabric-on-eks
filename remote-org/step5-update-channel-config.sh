@@ -15,7 +15,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# this script signs the channel config created in Step 3.
+# this script updates the channel config created in Step 3. This will write the channel config to the channel as a block.
 
 function main {
     file=/${DATADIR}/rca-data/updateorg
@@ -27,11 +27,12 @@ function main {
        break
     fi
 
-    log "Step4: Signing channel config for new org $NEW_ORG ..."
-    #Now we need to sign the channel config to add the new org
+    log "Step4: Updating channel config for new org $NEW_ORG ..."
+    #Now we need to update the channel config to add the new org
     set +e
     for ORG in $PEER_ORGS; do
-        signConfOrgFabric $HOME $REPO $ORG $NEW_ORG
+        getAdminOrg
+        updateConfOrgFabric $HOME $REPO $ADMINORG
     done
 }
 
