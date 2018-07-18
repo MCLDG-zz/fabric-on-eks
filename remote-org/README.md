@@ -88,3 +88,17 @@ On the EC2 instance in the new org.
 
 Run the script `./remote-org/step6-start-new-peer.sh`. 
 
+### Step 7 - copy the channel genesis block to the new org
+On your local laptop or host.
+
+Copy the <channel-name>.block file from the main Fabric network to the new org, as follows:
+
+* Copy the <channel-name>.block file to your local laptop or host using (replace with your directory name, EC2 DNS and keypair):
+ `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key.pem ec2-user@ec2-18-236-169-96.us-west-2.compute.amazonaws.com:/opt/share/rca-data/mychannel.block mychannel.block`
+* Copy the local <channel-name>.block file to the EFS drive in your new AWS account using (replace with your directory name, EC2 DNS and keypair):
+`scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key-account1.pem /Users/edgema/Documents/apps/fabric-on-eks/mychannel.block  ec2-user@ec2-34-228-23-44.compute-1.amazonaws.com:/opt/share/rca-data/mychannel.block`
+
+### Step 8 - Join the channel
+On the EC2 instance in the new org.
+
+Run the script `./remote-org/step6-start-new-peer.sh`. 
