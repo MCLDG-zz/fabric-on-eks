@@ -18,10 +18,13 @@
 # this script signs the channel config created in Step 3.
 
 function main {
-    file=/${DATADIR}/updateorg
+    file=/${DATADIR}/rca-data/updateorg
     if [ -f "$file" ]; then
        NEW_ORG=$(cat $file)
        echo "File '$file' exists - new org is '$NEW_ORG'"
+    else
+       echo "File '$file' does not exist - cannot determine new org. Exiting..."
+       break
     fi
 
     log "Step4: Signing channel config for new org $NEW_ORG ..."
