@@ -18,8 +18,9 @@
 SDIR=$(dirname "$0")
 DATA=/opt/share
 SCRIPTS=$DATA/rca-scripts
+REPO=fabric-on-eks
 source $SCRIPTS/env.sh
-source $SDIR/utilities.sh
+source $HOME/$REPO/utilities.sh
 
 function signConfOrgFabric {
     if [ $# -lt 2 ]; then
