@@ -36,14 +36,14 @@ with the new config. This will enable the new org to join an existing channel
       Try to make this unique within the network. Example: PEER_PREFIX="michaelpeer"
 * Make sure the other properties in this file match your /scripts/env.sh
 
-### Step 1
+### Step 1 - make directories
 On the EC2 instance in the new org.
 
 Run the script `./remote-org/step1-mkdirs.sh`. 
 
 This creates directories on EFS and copies the ./scripts directory to EFS
 
-### Step 1a
+### Step 1a - configure env.sh
 After completing step 1, copy the file `env.sh` from the EFS drive in your main Fabric network (see /opt/share/rca-scripts/env.sh) 
 to the same location in the EFS drive in your new org.
 
@@ -82,3 +82,9 @@ On the EC2 instance in the existing Fabric network, i.e. where the orderer is ru
 * Edit the file `./remote-org/step3-create-channel-config.sh`, and add the new org and domain to the two ENV variables at the 
 top of the file
 * Run the script `./remote-org/step3-create-channel-config.sh`. 
+
+### Step 6 - Start the new peer
+On the EC2 instance in the new org.
+
+Run the script `./remote-org/step6-start-new-peer.sh`. 
+

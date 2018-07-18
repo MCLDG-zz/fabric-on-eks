@@ -15,31 +15,43 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# this script updates the channel config created in Step 3. This will write the channel config to the channel as a block.
+# This script is used to start a remote peer, in a different account/region to the main Fabric network.
+
+set -e
 
 function main {
-    file=/${DATADIR}/rca-data/updateorg
-    if [ -f "$file" ]; then
-       NEW_ORG=$(cat $file)
-       echo "File '$file' exists - new org is '$NEW_ORG'"
-    else
-       echo "File '$file' does not exist - cannot determine new org. Exiting..."
-       break
-    fi
-
-    log "Step4: Updating channel config for new org $NEW_ORG ..."
-    #Now we need to update the channel config to add the new org
-    set +
-    getAdminOrg
-    updateConfOrgFabric $HOME $REPO $ADMINORG
+    echo "Step6: start new peer ..."
+    cd $HOME/$REPO
+    startRegisterPeers $HOME $REPO
+    startRemotePeers $HOME $REPO
+    echo "Step6: start new peer complete"
 }
 
+function startRemotePeers {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startRemotePeers <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Starting Remote Peers in K8s"
+
+    for ORG in $PEER_ORGS; do
+      local COUNT=1
+      while [[ "$COUNT" -le $NUM_PEERS ]]; do
+        kubectl apply -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
+        COUNT=$((COUNT+1))
+      done
+    done
+    confirmDeployments
+}
+
+SDIR=$(dirname "$0")
 DATADIR=/opt/share/
 SCRIPTS=$DATADIR/rca-scripts
 REPO=fabric-on-eks
 source $SCRIPTS/env.sh
-source $HOME/$REPO/signorgconfig.sh
+source $HOME/$REPO/utilities.sh
 main
-
-
 
