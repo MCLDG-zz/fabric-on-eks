@@ -26,7 +26,7 @@ function main {
        echo "File '$file' exists - new org is '$NEW_ORG'"
     else
        echo "File '$file' does not exist - cannot determine new org. Exiting..."
-       break
+       exit 1
     fi
 
     log "Step8: Peer for $NEW_ORG joining channel"

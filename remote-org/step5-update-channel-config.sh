@@ -24,7 +24,7 @@ function main {
        echo "File '$file' exists - new org is '$NEW_ORG'"
     else
        echo "File '$file' does not exist - cannot determine new org. Exiting..."
-       break
+       exit 1
     fi
 
     log "Step4: Updating channel config for new org $NEW_ORG ..."

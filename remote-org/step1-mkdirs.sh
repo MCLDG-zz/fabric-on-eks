@@ -18,6 +18,11 @@
 # This script is used to start a remote peer, in a different account/region to the main Fabric network.
 # See the README in the remote-peer folder for details.
 
+# these scripts add an org into the Fabric network. The org and its domain are captured in the
+# 2 ENV variables below.
+NEW_ORG="org7"
+NEW_DOMAIN="org7"
+
 set -e
 
 function main {
@@ -30,9 +35,18 @@ function main {
     echo "Step1 of remote org on Hyperledger Fabric on Kubernetes complete"
 }
 
+
 SDIR=$(dirname "$0")
 DATADIR=/opt/share/
 SCRIPTS=$DATADIR/rca-scripts
 REPO=fabric-on-eks
 main
 
+# create a temp file. The scripts/addorg* shell scripts will check for files; if they find them
+# they will setup, join, sign, etc., as necessary.
+# this is a cheap and nasty way of sending events. I should change this to use SNS or some other
+# mechanism for sending events between the different containers.
+DATADIR=/opt/share/
+cat > ${DATADIR}/rca-data/updateorg << EOF
+${NEW_ORG}
+EOF

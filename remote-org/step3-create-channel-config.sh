@@ -15,7 +15,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# this script adds an org into the Fabric network. The org and its domain are captured in the
+# these scripts add an org into the Fabric network. The org and its domain are captured in the
 # 2 ENV variables below.
 NEW_ORG="org7"
 NEW_DOMAIN="org7"

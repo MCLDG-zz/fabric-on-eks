@@ -36,6 +36,14 @@ with the new config. This will enable the new org to join an existing channel
       Try to make this unique within the network. Example: PEER_PREFIX="michaelpeer"
 * Make sure the other properties in this file match your /scripts/env.sh
 
+In the new AWS account:
+* Edit the file `./remote-org/step1-mkdirs.sh`, and add the new org and domain to the two ENV variables at the 
+top of the file
+
+In the original AWS account with the main Fabric network:
+* Edit the file `./remote-org/step3-create-channel-config.sh`, and add the new org and domain to the two ENV variables at the 
+top of the file
+
 ### Step 1 - make directories
 On the EC2 instance in the new org.
 
