@@ -50,7 +50,9 @@ function main {
         log "Job fabric-job-addorg-setup-$ORG.yaml did not achieve a successful completion - check the logs; exiting"
         return 1
     elif [ $SIGNCONFIG -eq 0 ]; then
-        signConfOrgFabric $HOME $REPO $NEW_ORG
+        for ORG in $PEER_ORGS; do
+            signConfOrgFabric $HOME $REPO $ORG $NEW_ORG
+        done
         getAdminOrg
         updateConfOrgFabric $HOME $REPO $ADMINORG
     fi

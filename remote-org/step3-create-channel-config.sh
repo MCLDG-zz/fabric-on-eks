@@ -21,7 +21,7 @@ NEW_ORG="org7"
 NEW_DOMAIN="org7"
 
 function main {
-    log "Step3: Updating channel config for new org $NEW_ORG ..."
+    log "Step3: Creating channel config for new org $NEW_ORG ..."
     # Stop all jobs. Previous jobs would have either added/removed an org - they must be stopped
     # before we genTemplates. If the org structure has changed, the yaml files for the orgs may
     # have been deleted, e.g. if I previously removed an org, this org will not exist in env.sh
@@ -33,7 +33,7 @@ function main {
     # create a new configtx.yaml that includes the new org
     updateChannelArtifacts $HOME $REPO
 
-    #Now we need to update the channel config to add the new org
+    #Now we need to create the channel config to add the new org
     set +e
     startaddorgFabric
     SIGNCONFIG=$?
@@ -41,7 +41,7 @@ function main {
         log "Step3: Job fabric-job-addorg-setup-$ORG.yaml did not achieve a successful completion - check the logs; exiting"
         return 1
     fi
-    log "Step3: Updating channel config for new org $NEW_ORG complete"
+    log "Step3: Creating channel config for new org $NEW_ORG complete"
 }
 
 function startaddorgFabric {
@@ -79,13 +79,12 @@ function startaddorgFabric {
 # they will setup, join, sign, etc., as necessary.
 # this is a cheap and nasty way of sending events. I should change this to use SNS or some other
 # mechanism for sending events between the different containers.
-DATA=/opt/share/
-cat > ${DATA}/rca-data/updateorg << EOF
+DATADIR=/opt/share/
+cat > ${DATADIR}/rca-data/updateorg << EOF
 ${NEW_ORG}
 EOF
 
-SDIR=$(dirname "$0")
-SCRIPTS=$DATA/rca-scripts
+SCRIPTS=$DATADIR/rca-scripts
 REPO=fabric-on-eks
 source $HOME/$REPO/gen-env-file.sh
 genNewEnvAddOrg $NEW_ORG $NEW_DOMAIN $SCRIPTS
@@ -97,7 +96,6 @@ source $HOME/$REPO/signorgconfig.sh
 source $HOME/$REPO/installchaincode.sh
 log "Step3: PEER_ORGS at start of addorg.sh: '$PEER_ORGS'"
 log "Step3: PEER_DOMAINS at start of addorg.sh: '$PEER_DOMAINS'"
-DATA=/opt/share/
 main
 
 

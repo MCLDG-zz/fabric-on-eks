@@ -23,41 +23,40 @@ source $SDIR/utilities.sh
 
 function signConfOrgFabric {
     if [ $# -lt 2 ]; then
-        echo "Usage: signConfOrgFabric <home-dir> <repo-name> <new-org - an org if we are adding a new org, otherwise leave blank>"
+        echo "Usage: signConfOrgFabric <home-dir> <repo-name> <signing-org - the org signing the config> <new-org - an org if we are adding a new org, otherwise leave blank>"
         exit 1
     fi
     local HOME=$1
     local REPO=$2
-    local NEWORG=$3
+    local SIGNINGORG=$3
+    local NEWORG=$4
 
-    log "Signing org config for Fabric in K8s"
+    log "Signing org config for Fabric in K8s. Signer is: '$SIGNINGORG'. New org being added to config is: '$NEWORG'"
     cd $HOME
-    # the other peer admins must sign the new org config update.
-    for ORG in $PEER_ORGS; do
-        #config update can't be signed and updated by the new org, if we are adding one, so skip it
-        if [[ "$ORG" == "$NEWORG" ]]; then
-            continue
+
+    #config update can't be signed and updated by the new org, if we are adding one
+    if [[ "$SIGNINGORG" == "$NEWORG" ]]; then
+        log "Error: signing org == new org being added. '$NEWORG' is being added to the network. It cannot sign the config update. Signer is: '$SIGNINGORG'"
+        break
+    fi
+    getDomain $SIGNINGORG
+    kubectl apply -f $REPO/k8s/fabric-job-signconf-$SIGNINGORG.yaml --namespace $DOMAIN
+    confirmJobs "fabric-signconf"
+    if [ $? -eq 1 ]; then
+        log "Job fabric-job-signconf-$SIGNINGORG.yaml failed; exiting"
+        exit 1
+    fi
+    #domain is overwritten by confirmJobs, so we look it up again
+    getDomain $SIGNINGORG
+    # check whether the signing of the org config has completed
+    for i in {1..10}; do
+        if kubectl logs jobs/fabric-signconf --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The config file has been signed"; then
+            log "Org configuration signed by fabric-job-signconf-$SIGNINGORG.yaml"
+            break
+        else
+            log "Waiting for fabric-job-signconf-$SIGNINGORG.yaml to complete"
+            sleep 5
         fi
-        log "'$ORG' is signing the config update"
-        getDomain $ORG
-        kubectl apply -f $REPO/k8s/fabric-job-signconf-$ORG.yaml --namespace $DOMAIN
-        confirmJobs "fabric-signconf"
-        if [ $? -eq 1 ]; then
-            log "Job fabric-job-signconf-$ORG.yaml failed; exiting"
-            exit 1
-        fi
-        #domain is overwritten by confirmJobs, so we look it up again
-        getDomain $ORG
-        # check whether the signing of the org config has completed
-        for i in {1..10}; do
-            if kubectl logs jobs/fabric-signconf --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The config file has been signed"; then
-                log "Org configuration signed by fabric-job-signconf-$ORG.yaml"
-                break
-            else
-                log "Waiting for fabric-job-signconf-$ORG.yaml to complete"
-                sleep 5
-            fi
-        done
     done
 }
 
