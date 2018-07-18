@@ -26,6 +26,7 @@ function main {
     read -p "Press enter to continue"
     cd $HOME/$REPO
     mergeEnv
+    source util-prep.sh
     source scripts/env.sh
     source utilities.sh
     makeDirsForOrg $DATADIR
@@ -50,6 +51,7 @@ function mergeEnv {
     end='^##--END REPLACE CONTENTS--##$'
     newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-org/scripts/env-remote-org.sh
         }; /$end/p; d }" $SCRIPTS/env.sh`
+    sudo chown ec2-user $SCRIPTS/env.sh
     echo "$newfile" > $SCRIPTS/env.sh
     cp $SCRIPTS/env.sh scripts/env.sh
 }

@@ -25,7 +25,7 @@ function main {
    enrollCAAdmin
    registerOrgIdentities
    getCACerts
-   log "Finished registering identities for $ORG"
+   log "Finished registering organisation $ORG"
 }
 
 # Enroll the CA administrator

@@ -39,7 +39,7 @@ with the new config. This will enable the new org to join an existing channel
 ### Step 1
 On the EC2 instance in the new org.
 
-Run the script `step1-remote-org.sh`. 
+Run the script `./remote-org/step1-mkdirs.sh`. 
 
 This creates directories on EFS and copies the ./scripts directory to EFS
 
@@ -49,10 +49,10 @@ to the same location in the EFS drive in your new org.
 
 You can do this by either copying and pasting the file contents, or by using the SCP commands used below for copying certificates.
 
-### Step 2 - Obtain the certs/keys for the new org
+### Step 2 - Obtain the certs/keys for the new org and copy to Fabric network
 On the EC2 instance in the new org.
 
-Run the script `step2-remote-org.sh`. 
+Run the script `./remote-org/step2-register-new-org.sh`. 
 
 This will start a root CA, and optionally start an intermediate CA. It will then register the organisation with the CA
 and generate the certs/keys for the new org.
@@ -76,4 +76,9 @@ directory. Replace 'org7' with your org name
 * `sudo tar xvf ~/org7msp.tar` - this should extract they certs for the new org onto the EFS drive, at /opt/share
 
 
-### Configure the remote peer
+### Step 3 - Update channel config to include new org
+On the EC2 instance in the existing Fabric network, i.e. where the orderer is running.
+
+* Edit the file `./remote-org/step3-create-channel-config.sh`, and add the new org and domain to the two ENV variables at the 
+top of the file
+* Run the script `./remote-org/step3-create-channel-config.sh`. 
