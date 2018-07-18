@@ -20,6 +20,7 @@ function main {
     cd $HOME
     set +e
     stopTest $HOME $REPO
+    stopRegisterOrgs $HOME $REPO
     for DELETE_ORG in $ORGS; do
         stopRemoteTest $HOME $REPO $DELETE_ORG
         stopRemotePeers $HOME $REPO $DELETE_ORG

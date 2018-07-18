@@ -39,7 +39,8 @@ function main {
     startPVC $HOME $REPO
     startRCA $HOME $REPO
     startICA $HOME $REPO
-    startRegisterPeers $HOME $REPO
+    startRegisterOrgs $HOME $REPO
+#    startRegisterPeers $HOME $REPO
 #    startRemotePeers $HOME $REPO
 #    startRemoteTest $HOME $REPO
 #    whatsRunning

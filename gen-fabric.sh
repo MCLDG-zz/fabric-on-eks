@@ -73,6 +73,7 @@ function main {
     genPVC
     genRCA
     genICA
+    genRegisterOrg
     genRegisterOrderer
     genRegisterPeers
     genChannelArtifacts
@@ -145,6 +146,14 @@ function genICA {
         getDomain $ORG
         sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%FABRICORGS%/${FABRICORGS}/g" -e "s/%PORT%/${icaport}/g" ${K8STEMPLATES}/fabric-deployment-ica.yaml > ${K8SYAML}/fabric-deployment-ica-$ORG.yaml
         icaport=$((icaport+100))
+    done
+}
+
+function genRegisterOrg {
+    log "Generating Register Org K8s YAML files"
+    for ORG in $ORGS; do
+        getDomain $ORG
+        sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-register-org.yaml > ${K8SYAML}/fabric-deployment-register-org-$ORG.yaml
     done
 }
 

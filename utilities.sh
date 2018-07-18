@@ -193,6 +193,21 @@ function stopICA {
     confirmDeploymentsStopped ica $ORG
 }
 
+function stopRegisterOrgs {
+    if [ $# -ne 2 ]; then
+        echo "Usage: stopRegisterOrgs <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Stopping Registering Fabric Orgs"
+    for ORG in $ORGS; do
+            kubectl delete -f $REPO/k8s/fabric-deployment-register-org-$ORG.yaml
+    done
+    confirmDeploymentsStopped register-o
+}
+
 function stopRegisterOrderers {
     if [ $# -ne 2 ]; then
         echo "Usage: stopRegisterOrderers <home-dir> <repo-name>"
@@ -349,6 +364,21 @@ function joinaddorgFabric {
             sleep 5
         fi
     done
+}
+
+function startRegisterOrgs {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startRegisterOrgs <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Registering Fabric Orgs"
+    for ORG in $ORGS; do
+            kubectl apply -f $REPO/k8s/fabric-deployment-register-org-$ORG.yaml
+    done
+    confirmDeployments
 }
 
 function startRegisterOrderers {

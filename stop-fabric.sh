@@ -22,6 +22,7 @@ function main {
     set +e
     stopTest $HOME $REPO
     stopChannelArtifacts $HOME $REPO
+    stopRegisterOrgs $HOME $REPO
     stopRegisterOrderers $HOME $REPO
     stopOrderer $HOME $REPO
     stopKafka $HOME $REPO

@@ -34,6 +34,7 @@ function main {
     startPVC $HOME $REPO
     startRCA $HOME $REPO
     startICA $HOME $REPO
+    startRegisterOrgs $HOME $REPO
     startRegisterOrderers $HOME $REPO
     startRegisterPeers $HOME $REPO
     if [ $FABRIC_NETWORK_TYPE == "PROD" ]; then
