@@ -93,7 +93,7 @@ A couple of configuration steps are required before starting the new peer:
     * Set PEER_DOMAINS to one of the domains in the Fabric network. Example: PEER_DOMAINS="org1"
     * Set PEER_PREFIX to any name you choose. This will become the name of your peer on the network. 
       Try to make this unique within the network. Example: PEER_PREFIX="michaelpeer"
-* Do not change anything else in the file
+* Make sure the other properties in this file match your /scripts/env.sh
 
 We are now ready to start the new peer. On the EC2 instance in the new account created above, in the repo directory, run:
 

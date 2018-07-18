@@ -26,9 +26,36 @@ with the new config. This will enable the new org to join an existing channel
 * Copy the genesis block of the channel to the new org. Peers in the new org will use this to join the channel
 * In the new org, start the peers and join the channel
 
-### Obtain the certs/keys for the new org
-In the AWS account & region where you want to host the new Fabric organisation, start a root CA, and optionally start
-an intermediate CA.
+### Pre-requisites
+* SSH into the EC2 instance you created in the new AWS account
+* Navigate to the `fabric-on-eks` repo
+* Edit the file `remote-org/scripts/env-remote-org.sh`. Update the following fields:
+    * Set PEER_ORGS to the name of your new organisation. Example: PEER_ORGS="org7"
+    * Set PEER_DOMAINS to the domain of your new organisation. Example: PEER_DOMAINS="org7"
+    * Set PEER_PREFIX to any name you choose. This will become the name of your peer on the network. 
+      Try to make this unique within the network. Example: PEER_PREFIX="michaelpeer"
+* Make sure the other properties in this file match your /scripts/env.sh
+
+### Step 1
+On the EC2 instance in the new org.
+
+Run the script `step1-remote-org.sh`. 
+
+This creates directories on EFS and copies the ./scripts directory to EFS
+
+### Step 1a
+After completing step 1, copy the file `env.sh` from the EFS drive in your main Fabric network (see /opt/share/rca-scripts/env.sh) 
+to the same location in the EFS drive in your new org.
+
+You can do this by either copying and pasting the file contents, or by using the SCP commands used below for copying certificates.
+
+### Step 2 - Obtain the certs/keys for the new org
+On the EC2 instance in the new org.
+
+Run the script `step2-remote-org.sh`. 
+
+This will start a root CA, and optionally start an intermediate CA. It will then register the organisation with the CA
+and generate the certs/keys for the new org.
 
 To join a new Fabric organisation to an existing Fabric network, you need to copy the certificates for the new org
 to the existing network. The certificates of interest are the admincerts, cacerts and tlscacerts found in the new

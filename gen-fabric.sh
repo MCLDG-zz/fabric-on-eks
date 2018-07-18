@@ -283,7 +283,7 @@ function genFabricTest {
     #get the first peer org. Setup only needs to run once, against the peer org
     getAdminOrg
     getDomain $ADMINORG
-    sed -e "s/%ORG%/${ADMINORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-test-fabric.yaml > ${K8SYAML}/fabric-deployment-test-fabric.yaml
+    sed -e "s/%ORG%/${ADMINORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-test-fabric-abac.yaml > ${K8SYAML}/fabric-deployment-test-fabric-abac.yaml
 }
 
 function genFabricTestMarbles {
