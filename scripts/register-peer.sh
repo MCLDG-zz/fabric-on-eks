@@ -27,9 +27,19 @@ function main {
    log "Finished registering peer for org $ORG"
 }
 
+# Enroll the CA administrator
+function enrollCAAdmin {
+   initOrgVars $ORG
+   log "Enrolling with $CA_NAME as bootstrap identity ..."
+   export FABRIC_CA_CLIENT_HOME=$HOME/cas/$CA_NAME
+   export FABRIC_CA_CLIENT_TLS_CERTFILES=$CA_CHAINFILE
+   fabric-ca-client enroll -d -u https://$CA_ADMIN_USER_PASS@$CA_HOST:7054
+}
+
 # Register any identities associated with a peer
 function registerPeerIdentities {
     initOrgVars $ORG
+    enrollCAAdmin
     local COUNT=1
     while [[ "$COUNT" -le $NUM_PEERS ]]; do
         initPeerVars $ORG $COUNT
