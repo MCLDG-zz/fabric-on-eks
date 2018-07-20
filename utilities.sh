@@ -426,6 +426,20 @@ function testChaincode {
     done
 }
 
+function mergeEnv {
+    #merge the contents of the env.sh file
+    #the env.sh in $SCRIPTS will have been updated with the DNS of the various endpoints, such as ORDERER and
+    #ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
+    #these DNS endpoints as they are used by the remote peer
+    cd $HOME/$REPO
+    start='^##--BEGIN REPLACE CONTENTS--##$'
+    end='^##--END REPLACE CONTENTS--##$'
+    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-org/scripts/env-remote-org.sh
+        }; /$end/p; d }" $SCRIPTS/env.sh`
+    sudo chown ec2-user $SCRIPTS/env.sh
+    echo "$newfile" > $SCRIPTS/env.sh
+    cp $SCRIPTS/env.sh scripts/env.sh
+}
 
 function startRegisterOrgs {
     if [ $# -ne 2 ]; then
@@ -630,6 +644,46 @@ function startPeers {
    confirmDeployments
 }
 
+function startRemotePeers {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startRemotePeers <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Starting Remote Peers in K8s"
+
+    for ORG in $PEER_ORGS; do
+      local COUNT=1
+      while [[ "$COUNT" -le $NUM_PEERS ]]; do
+        kubectl apply -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
+        COUNT=$((COUNT+1))
+      done
+    done
+    confirmDeployments
+}
+
+function stopRemotePeers {
+    if [ $# -ne 3 ]; then
+        echo "Usage: stopRemotePeers <home-dir> <repo-name> <delete-org>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    local ORG=$3
+    cd $HOME
+    log "Deleting Remote Peers in K8s"
+
+    local COUNT=1
+    while [[ "$COUNT" -le $NUM_PEERS ]]; do
+        kubectl delete -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
+        COUNT=$((COUNT+1))
+    done
+    confirmDeploymentsStopped remote-peer
+}
+
+
 function startTest {
     if [ $# -ne 2 ]; then
         echo "Usage: startTest <home-dir> <repo-name>"
@@ -642,7 +696,6 @@ function startTest {
     kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
     confirmDeployments
 }
-
 
 function getAdminOrg {
     peerorgs=($PEER_ORGS)

@@ -316,6 +316,18 @@ export CORE_PEER_ID=peer1-org3
 export CORE_PEER_ADDRESS=peer1-org3.org3:7051
 export CORE_PEER_LOCALMSPID=org3MSP
 
+export CORE_PEER_TLS_CLIENTCERT_FILE=/data/tls/michaelpeer1-org8-client.crt
+export CORE_PEER_TLS_CLIENTKEY_FILE=/data/tls/michaelpeer1-org8-client.key
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
+export CORE_PEER_TLS_CLIENTROOTCAS_FILES=/data/org8-ca-chain.pem
+export CORE_PEER_TLS_ROOTCERT_FILE=/data/org8-ca-chain.pem
+export CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+export CORE_PEER_ID=michaelpeer1-org8
+export CORE_PEER_ADDRESS=michaelpeer1-org8.org8:7051
+export CORE_PEER_LOCALMSPID=org8MSP
+export CORE_PEER_MSPCONFIGPATH=/data/orgs/org8/admin/msp
+
 Set context to user:
 export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/msp
 
@@ -492,9 +504,10 @@ Kubernetes won't accept boolean ENV variables without quotes.
 
 I worked around this by moving these ENV variables into scripts/env.sh.
 
-## Key structure
+## Key and cert structure
 All directories are in /opt/share
 
+### Root CA
 After starting the root CA containers (rca):
 
 PEM-encoded CA certificate files for each root CA. These are the root CA public key files.
@@ -507,6 +520,37 @@ total 12
 -rw-r--r-- 1 root root 761 Mar 28 14:13 org0-ca-cert.pem
 ```
 
+Certificates and TLS certs for the CA
+
+```bash
+$ ls -lR /opt/share/rca-org7/
+/opt/share/rca-org7/:
+total 68
+-rw-r--r-- 1 root root   778 Jul 17 13:59 ca-cert.pem
+-rw-r--r-- 1 root root 15944 Jul 17 13:59 fabric-ca-server-config.yaml
+-rw-r--r-- 1 root root 40960 Jul 17 13:59 fabric-ca-server.db
+drwxr-xr-x 5 root root  6144 Jul 17 13:59 msp
+-rw-r--r-- 1 root root   912 Jul 17 13:59 tls-cert.pem
+
+/opt/share/rca-org7/msp:
+total 12
+drwxr-xr-x 2 root root 6144 Jul 17 13:59 cacerts
+drwxr-xr-x 2 root root 6144 Jul 17 13:59 keystore
+drwxr-xr-x 2 root root 6144 Jul 17 13:59 signcerts
+
+/opt/share/rca-org7/msp/cacerts:
+total 0
+
+/opt/share/rca-org7/msp/keystore:
+total 8
+-rwx------ 1 root root 241 Jul 17 13:59 5b8d841f8b0ca195e18d1c6e6ea40495d6dd3ea2cff05c7b5bf95eff17da25ce_sk
+-rwx------ 1 root root 241 Jul 17 13:59 c3f4735f9b1100fd60565bf1c6cfc428a13232c90230af923051be2be55e154f_sk
+
+/opt/share/rca-org7/msp/signcerts:
+total 0
+```
+
+### Intermediate CA
 After starting the intermediate CA containers (ica):
 
 PEM-encoded CA certificate files for each intermediate CA. These are the intermediate CA public key files.
@@ -522,133 +566,159 @@ total 24
 -rw-r--r-- 1 root root  761 Mar 28 14:13 org0-ca-cert.pem
 ```
 
-After starting the root and intermediate CA containers, and starting the tools container,
-the structure of the keys folder should look as follows:
-
+Each root and intermediate CA will have its own MSP directory with certs/keys. 
 
 ```bash
-$ sudo ls -lR rca-data/
-rca-data/:
-total 44
--rw-r--r-- 1 root root  255 Mar 28 14:28 channel.tx
--rw-r--r-- 1 root root 2779 Mar 28 14:28 configtx.yaml
--rw-r--r-- 1 root root 5398 Mar 28 14:28 genesis.block
--rw-r--r-- 1 root root  761 Mar 28 14:13 org0-ca-cert.pem
--rw-r--r-- 1 root root 1575 Mar 28 14:23 org0-ca-chain.pem
--rw-r--r-- 1 root root  765 Mar 28 14:13 org1-ca-cert.pem
--rw-r--r-- 1 root root 1583 Mar 28 14:24 org1-ca-chain.pem
--rw-r--r-- 1 root root  761 Mar 28 14:17 org2-ca-cert.pem
--rw-r--r-- 1 root root 1575 Mar 28 14:23 org2-ca-chain.pem
-drwx------ 3 root root 6144 Mar 28 14:28 orgs
+$ ls -lR /opt/share/ica-org7/
+/opt/share/ica-org7/:
+total 72
+-rw-r--r-- 1 root root   822 Jul 17 13:59 ca-cert.pem
+-rw-r--r-- 1 root root  1600 Jul 17 13:59 ca-chain.pem
+-rw-r--r-- 1 root root 15928 Jul 17 14:00 fabric-ca-server-config.yaml
+-rw-r--r-- 1 root root 40960 Jul 17 14:00 fabric-ca-server.db
+drwxr-xr-x 5 root root  6144 Jul 17 13:59 msp
+-rw-r--r-- 1 root root   912 Jul 17 14:00 tls-cert.pem
 
-rca-data/orgs:
-total 4
-drwx------ 4 root root 6144 Mar 28 14:28 org0
-
-rca-data/orgs/org0:
-total 8
-drwxr-xr-x 3 root root 6144 Mar 28 14:28 admin
-drwx------ 9 root root 6144 Mar 28 14:28 msp
-
-rca-data/orgs/org0/admin:
+/opt/share/ica-org7/msp:
 total 12
--rwxr-xr-x 1 root root 6526 Mar 28 14:28 fabric-ca-client-config.yaml
-drwx------ 7 root root 6144 Mar 28 14:28 msp
+drwxr-xr-x 2 root root 6144 Jul 17 13:59 cacerts
+drwxr-xr-x 2 root root 6144 Jul 17 14:00 keystore
+drwxr-xr-x 2 root root 6144 Jul 17 13:59 signcerts
 
-rca-data/orgs/org0/admin/msp:
-total 20
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 admincerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 cacerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 intermediatecerts
-drwx------ 2 root root 6144 Mar 28 14:28 keystore
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 signcerts
-
-rca-data/orgs/org0/admin/msp/admincerts:
-total 4
--rw-r--r-- 1 root root 1038 Mar 28 14:28 cert.pem
-
-rca-data/orgs/org0/admin/msp/cacerts:
-total 4
--rw-r--r-- 1 root root 761 Mar 28 14:28 ica-org0-7054.pem
-
-rca-data/orgs/org0/admin/msp/intermediatecerts:
-total 4
--rw-r--r-- 1 root root 814 Mar 28 14:28 ica-org0-7054.pem
-
-rca-data/orgs/org0/admin/msp/keystore:
-total 4
--rwx------ 1 root root 241 Mar 28 14:28 a305a94afc99ecee32f4eb5c55f7db034fd8faba878b88be4c64db33af20c55b_sk
-
-rca-data/orgs/org0/admin/msp/signcerts:
-total 4
--rw-r--r-- 1 root root 1038 Mar 28 14:28 cert.pem
-
-rca-data/orgs/org0/msp:
-total 28
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 admincerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 cacerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 intermediatecerts
-drwx------ 2 root root 6144 Mar 28 14:28 keystore
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 signcerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 tlscacerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:28 tlsintermediatecerts
-
-rca-data/orgs/org0/msp/admincerts:
-total 4
--rw-r--r-- 1 root root 1038 Mar 28 14:28 cert.pem
-
-rca-data/orgs/org0/msp/cacerts:
-total 4
--rw-r--r-- 1 root root 761 Mar 28 14:28 ica-org0-7054.pem
-
-rca-data/orgs/org0/msp/intermediatecerts:
-total 4
--rw-r--r-- 1 root root 814 Mar 28 14:28 ica-org0-7054.pem
-
-rca-data/orgs/org0/msp/keystore:
+/opt/share/ica-org7/msp/cacerts:
 total 0
 
-rca-data/orgs/org0/msp/signcerts:
+/opt/share/ica-org7/msp/keystore:
+total 8
+-rwx------ 1 root root 241 Jul 17 13:59 9e4c48cf8ad3c756d52939597d53baa8ba1e4d6155041f95a3b287e2366b871b_sk
+-rwx------ 1 root root 241 Jul 17 14:00 fc13b53de6bfffee7cb3e23843a480882785c9465b25e2c890f8d0db3d364947_sk
+
+/opt/share/ica-org7/msp/signcerts:
 total 0
-
-rca-data/orgs/org0/msp/tlscacerts:
-total 4
--rw-r--r-- 1 root root 761 Mar 28 14:28 ica-org0-7054.pem
-
-rca-data/orgs/org0/msp/tlsintermediatecerts:
-total 4
--rw-r--r-- 1 root root 814 Mar 28 14:28 ica-org0-7054.pem
 ```
 
-Each organisation will have its own MSP directory with certs/keys. It will also have a copy of the root CA 
-public key PEM file.
+### Registering 
+Fabric network users must be registered before they can use the network. Registration involves the registration of users
+for three entities:
+
+* Organisation. Certs/keys can be found in /opt/share/rca-data/orgs/<org number>
+* Orderer. Certs/keys can be found in /opt/share/rca-data/orgs/org0 (assuming the orderer is org0)
+* Peer. 
+
+The 'register-org' script is run after the root and intermediate CA's are started. It does the following:
+
+Enrolls a CA admin bootstrap ID with the CA. This is a user that is CA administrator. The certs for this user are stored internally, inside the 
+container, and are not copied to a shared drive.
+
+* client certificate at /root/cas/ica-org7.org7/msp/signcerts/cert.pem
+* root CA certificate at /root/cas/ica-org7.org7/msp/cacerts/ica-org7-org7-7054.pem
+* intermediate CA certificates at /root/cas/ica-org7.org7/msp/intermediatecerts/ica-org7-org7-7054.pem
+
+The following users are then registered with the CA:
+* An admin user for the organisation is registered with the CA. The id of this user is, for example, admin-org7.
+* A user for the organisation is registered with the CA. The id of this user is, for example, user-org7.
+
+Finally, the certificates for the organisation are generated and stored in the msp directory. Admincerts will be 
+generated if the ADMINCERTS option is true.
+
+The folder structure for the new org MSP looks as follows:
 
 ```bash
-$ ls -lR rca-org1
-rca-org1:
-total 68
--rw-r--r-- 1 root root   765 Mar 28 14:13 ca-cert.pem
--rw-r--r-- 1 root root 15946 Mar 28 14:13 fabric-ca-server-config.yaml
--rw-r--r-- 1 root root 40960 Mar 28 14:23 fabric-ca-server.db
-drwxr-xr-x 5 root root  6144 Mar 28 14:13 msp
--rw-r--r-- 1 root root   895 Mar 28 14:13 tls-cert.pem
-
-rca-org1/msp:
-total 12
-drwxr-xr-x 2 root root 6144 Mar 28 14:13 cacerts
-drwxr-xr-x 2 root root 6144 Mar 28 14:13 keystore
-drwxr-xr-x 2 root root 6144 Mar 28 14:13 signcerts
-
-rca-org1/msp/cacerts:
-total 0
-
-rca-org1/msp/keystore:
+ sudo ls -lR /opt/share/rca-data/orgs/org7/msp
+/opt/share/rca-data/orgs/org7:
 total 8
--rwx------ 1 root root 241 Mar 28 14:13 3f73b93c08f4bbc3100986acb1a1280177ac3c4b69ef31435474955a8086ec27_sk
--rwx------ 1 root root 241 Mar 28 14:13 fddbd7db3663a226f3f680fc9e4878c177fde7b3001d12c4f693e068ecca6993_sk
+drwxr-xr-x 3 root root 6144 Jul 18 03:11 admin
+drwx------ 9 root root 6144 Jul 18 03:11 msp
 
-rca-org1/msp/signcerts:
+/opt/share/rca-data/orgs/org7/admin:
+total 12
+-rwxr-xr-x 1 root root 6540 Jul 18 03:11 fabric-ca-client-config.yaml
+drwx------ 7 root root 6144 Jul 18 03:11 msp
+
+/opt/share/rca-data/orgs/org7/admin/msp:
+total 20
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 admincerts
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 cacerts
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 intermediatecerts
+drwx------ 2 root root 6144 Jul 18 03:11 keystore
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 signcerts
+
+/opt/share/rca-data/orgs/org7/admin/msp/admincerts:
+total 4
+-rw-r--r-- 1 root root 1078 Jul 18 03:11 cert.pem
+
+/opt/share/rca-data/orgs/org7/admin/msp/cacerts:
+total 4
+-rw-r--r-- 1 root root 778 Jul 18 03:11 ica-org7-org7-7054.pem
+
+/opt/share/rca-data/orgs/org7/admin/msp/intermediatecerts:
+total 4
+-rw-r--r-- 1 root root 822 Jul 18 03:11 ica-org7-org7-7054.pem
+
+/opt/share/rca-data/orgs/org7/admin/msp/keystore:
+total 4
+-rwx------ 1 root root 241 Jul 18 03:11 ee4977a001185bc87280ab4177557bc6bea22a89234dd5ed910ee2cddcc52eaa_sk
+
+/opt/share/rca-data/orgs/org7/admin/msp/signcerts:
+total 4
+-rw-r--r-- 1 root root 1078 Jul 18 03:11 cert.pem
+
+/opt/share/rca-data/orgs/org7/msp:
+total 28
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 admincerts
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 cacerts
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 intermediatecerts
+drwx------ 2 root root 6144 Jul 18 03:11 keystore
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 signcerts
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 tlscacerts
+drwxr-xr-x 2 root root 6144 Jul 18 03:11 tlsintermediatecerts
+
+/opt/share/rca-data/orgs/org7/msp/admincerts:
+total 4
+-rw-r--r-- 1 root root 1078 Jul 18 03:11 cert.pem
+
+/opt/share/rca-data/orgs/org7/msp/cacerts:
+total 4
+-rw-r--r-- 1 root root 778 Jul 18 03:11 ica-org7-org7-7054.pem
+
+/opt/share/rca-data/orgs/org7/msp/intermediatecerts:
+total 4
+-rw-r--r-- 1 root root 822 Jul 18 03:11 ica-org7-org7-7054.pem
+
+/opt/share/rca-data/orgs/org7/msp/keystore:
 total 0
+
+/opt/share/rca-data/orgs/org7/msp/signcerts:
+total 0
+
+/opt/share/rca-data/orgs/org7/msp/tlscacerts:
+total 4
+-rw-r--r-- 1 root root 778 Jul 18 03:11 ica-org7-org7-7054.pem
+
+/opt/share/rca-data/orgs/org7/msp/tlsintermediatecerts:
+total 4
+-rw-r--r-- 1 root root 822 Jul 18 03:11 ica-org7-org7-7054.pem
+```
+
+The 'register-orderer' script is then run. It does the following:
+
+* Each orderer in an organisation is registered with the CA. The id of this user is, for example, orderer1-org7.
+
+The 'register-peer' script is then run. It does the following:
+
+* Each peer in an organisation is registered with the CA. The id of this user is, for example, peer1-org7.
+
+### Peer TLS Certs
+Upon starting a new peer, a set of TLS certs are created. We generate a separate set of certs for inbound (i.e. from the
+CLI to the peer) and outbound (i.e. from the peer to other components)
+
+```bash
+$ ls -lt  /opt/share/rca-data/tls
+total 16
+-rwx------ 1 root root  241 Jul 17 23:54 michaelpeer1-org7-cli-client.key
+-rw-r--r-- 1 root root 1066 Jul 17 23:54 michaelpeer1-org7-cli-client.crt
+-rwx------ 1 root root  241 Jul 17 23:54 michaelpeer1-org7-client.key
+-rw-r--r-- 1 root root 1066 Jul 17 23:54 michaelpeer1-org7-client.crt
 ```
 
 The full cert/key directory structure looks as follows:
@@ -949,6 +1019,29 @@ and the same in the orderer:
             value: "true"
           - name: ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED
             value: "false"
+    
+###   TLS issues when creating new org in new account
+           
+remote error: tls: bad certificate
+
+I found some useful info here: https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=11&ved=0ahUKEwjQ6fDu4KrcAhULUN4KHS0DAw84ChAWCCkwAA&url=https%3A%2F%2Freadthedocs.org%2Fprojects%2Fhyperledger-fabric-ca%2Fdownloads%2Fpdf%2Flatest%2F&usg=AOvVaw1zI84gxZ0BXNth4sjdd2XX
+See the last pages in this doc.
+
+I used configtxgen to view the channel config, by fetching the latest config block:
+peer channel  fetch config -c mychannel -o a61689643897211e8834f06b86f026a6-4a015d7a09a2998a.elb.us-west-2.amazonaws.com:7050 --tls --cafile /data/org0-ca-chain.pem --clientauth --keyfile /data/tls/peer1-org1-cli-client.key --certfile /data/tls/peer1-org1-cli-client.crt
+
+/usr/local/bin/configtxgen -channelID mychannel -inspectBlock mychannel_config.block
+
+
+I used openssl to compare the identifiers in the various certs in the MSP directory:
+
+1023  sudo openssl x509 -in /opt/share/rca-data/org7-ca-chain.pem -noout -text
+ 1026  sudo openssl x509 -in /opt/share/rca-data/orgs/org7/msp/tlsintermediatecerts/ica-org7-org7-7054.pem -noout -text | grep -A1 "Subject Key Identifier"
+ 1027  sudo openssl x509 -in /opt/share/rca-data/orgs/org7/msp/tlscacerts/ica-org7-org7-7054.pem -noout -text | grep -A1 "Subject Key Identifier"
+ 1028  sudo openssl x509 -in /opt/share/rca-data/orgs/org7/msp/intermediatecerts/ica-org7-org7-7054.pem -noout -text| grep -A1 "Subject Key Identifier"
+ 1029  sudo openssl x509 -in /opt/share/rca-data/orgs/org7/msp/cacerts/ica-org7-org7-7054.pem -noout -text | grep -A1 "Subject Key Identifier"
+ 
+This showed that 
             
 ## TODO
 * Use a DB to store metadata, such as which version of CC is installed, which peers and orgs exist, etc.

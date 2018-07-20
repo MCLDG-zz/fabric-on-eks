@@ -21,7 +21,6 @@ function main {
     set +e
     stopTest $HOME $REPO
     for DELETE_ORG in $ORGS; do
-        stopRemoteTest $HOME $REPO $DELETE_ORG
         stopRemotePeers $HOME $REPO $DELETE_ORG
         stopRegisterPeers $HOME $REPO $DELETE_ORG
         stopICA $HOME $REPO $DELETE_ORG
@@ -34,41 +33,6 @@ function main {
     removeDirs $DATA
     whatsRunning
     log "Hyperledger Fabric remote peer on Kubernetes stopped"
-}
-
-function stopRemotePeers {
-    if [ $# -ne 3 ]; then
-        echo "Usage: stopRemotePeers <home-dir> <repo-name> <delete-org>"
-        exit 1
-    fi
-    local HOME=$1
-    local REPO=$2
-    local ORG=$3
-    cd $HOME
-    log "Deleting Remote Peers in K8s"
-
-    local COUNT=1
-    while [[ "$COUNT" -le $NUM_PEERS ]]; do
-        kubectl delete -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
-        COUNT=$((COUNT+1))
-    done
-    confirmDeploymentsStopped remote-peer
-}
-
-function stopRemoteTest {
-    if [ $# -ne 3 ]; then
-        echo "Usage: stopRemoteTest <home-dir> <repo-name> <delete-org>"
-        exit 1
-    fi
-    local HOME=$1
-    local REPO=$2
-    local ORG=$3
-    cd $HOME
-    log "Deleting Remote Test in K8s"
-
-    kubectl delete -f $REPO/k8s/fabric-deployment-test-remote-fabric-marbles-$ORG.yaml
-    confirmDeploymentsStopped test-remote-fabric
-
 }
 
 SDIR=$(dirname "$0")

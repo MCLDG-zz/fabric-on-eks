@@ -79,6 +79,7 @@ function main {
     genChannelArtifacts
     genOrderer
     genPeers
+    genRemotePeers
     genPeerJoinChannel
     genFabricTest
     genFabricTestMarbles
@@ -273,6 +274,24 @@ function genPeers {
             PORTCHAIN=$((PORTCHAIN+2))
             PORTEND=$((PORTCHAIN-1))
             sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORTEND%/${PORTEND}/g" -e "s/%PORTCHAIN%/${PORTCHAIN}/g" ${K8STEMPLATES}/fabric-deployment-peer.yaml > ${K8SYAML}/fabric-deployment-peer$COUNT-$ORG.yaml
+            COUNT=$((COUNT+1))
+        done
+        peerport=$((peerport+100))
+   done
+}
+
+
+function genRemotePeers {
+    peerport=30750
+    log "Generating Remote Peer K8s YAML files"
+    for ORG in $PEER_ORGS; do
+        getDomain $ORG
+        local COUNT=1
+        PORTCHAIN=$peerport
+        while [[ "$COUNT" -le $NUM_PEERS ]]; do
+            PORTCHAIN=$((PORTCHAIN+2))
+            PORTEND=$((PORTCHAIN-1))
+            sed -e "s/%PEER_PREFIX%/${PEER_PREFIX}/g" -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORTEND%/${PORTEND}/g" -e "s/%PORTCHAIN%/${PORTCHAIN}/g" remote-peer/k8s/fabric-deployment-remote-peer.yaml > ${K8SYAML}/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
             COUNT=$((COUNT+1))
         done
         peerport=$((peerport+100))

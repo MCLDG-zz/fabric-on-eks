@@ -54,7 +54,7 @@ function main {
 
    # Query chaincode on 2nd peer of 1st org
    sleep 10
-   initPeerVars ${PORGS[0]} 2
+   initPeerVars ${PORGS[0]} 1
    switchToUserIdentity
    chaincodeQuery
 

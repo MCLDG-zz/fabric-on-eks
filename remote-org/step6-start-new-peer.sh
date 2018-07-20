@@ -27,26 +27,6 @@ function main {
     echo "Step6: start new peer complete"
 }
 
-function startRemotePeers {
-    if [ $# -ne 2 ]; then
-        echo "Usage: startRemotePeers <home-dir> <repo-name>"
-        exit 1
-    fi
-    local HOME=$1
-    local REPO=$2
-    cd $HOME
-    log "Starting Remote Peers in K8s"
-
-    for ORG in $PEER_ORGS; do
-      local COUNT=1
-      while [[ "$COUNT" -le $NUM_PEERS ]]; do
-        kubectl apply -f $REPO/k8s/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
-        COUNT=$((COUNT+1))
-      done
-    done
-    confirmDeployments
-}
-
 SDIR=$(dirname "$0")
 DATADIR=/opt/share/
 SCRIPTS=$DATADIR/rca-scripts

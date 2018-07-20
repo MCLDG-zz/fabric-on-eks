@@ -29,11 +29,11 @@ function main {
        exit 1
     fi
 
-    log "Step9: Peer for $NEW_ORG test chaincode"
+    log "Step10: Peer for $NEW_ORG test chaincode"
     cd $HOME/$REPO
     testChaincode $HOME $REPO $NEW_ORG
 
-    echo "Step9: Testing chaincode complete"
+    echo "Step10: Testing chaincode complete"
 }
 
 SDIR=$(dirname "$0")
