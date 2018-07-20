@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -13,39 +15,32 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: fabric-installcc
-spec:
-  template:
-    metadata:
-      labels:
-       app: hyperledger
-       role: client
-       org: %ORG%
-       name: fabric-installcc
-    spec:
-     containers:
-       - name: fabric-installcc
-         image: hyperledger/fabric-ca-tools:x86_64-1.1.0
-         env:
-          - name: GOPATH
-            value: /opt/gopath
-          - name: PEERORG
-            value: %ORG%
-         command: ["sh"]
-         args:  ["-c", "/scripts/install-marbles-cc.sh 2>&1;"]
-         volumeMounts:
-          - mountPath: /scripts
-            name: rca-scripts
-          - mountPath: /data
-            name: rca-data
-     restartPolicy: Never
-     volumes:
-       - name: rca-scripts
-         persistentVolumeClaim:
-             claimName: rca-scripts-%ORG%-pvc
-       - name: rca-data
-         persistentVolumeClaim:
-             claimName: rca-data-%ORG%-pvc
+# This script is used to test chaincode
+
+set -e
+
+function main {
+    file=/${DATADIR}/rca-data/updateorg
+    if [ -f "$file" ]; then
+       NEW_ORG=$(cat $file)
+       echo "File '$file' exists - new org is '$NEW_ORG'"
+    else
+       echo "File '$file' does not exist - cannot determine new org. Exiting..."
+       exit 1
+    fi
+
+    log "Step9: Peer for $NEW_ORG test chaincode"
+    cd $HOME/$REPO
+    testChaincode $HOME $REPO $NEW_ORG
+
+    echo "Step9: Testing chaincode complete"
+}
+
+SDIR=$(dirname "$0")
+DATADIR=/opt/share/
+SCRIPTS=$DATADIR/rca-scripts
+REPO=fabric-on-eks
+source $SCRIPTS/env.sh
+source $HOME/$REPO/utilities.sh
+main
+

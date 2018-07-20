@@ -57,7 +57,7 @@ to the same location in the EFS drive in your new org.
 
 You can do this by either copying and pasting the file contents, or by using the SCP commands used below for copying certificates.
 
-### Step 2 - Obtain the certs/keys for the new org and copy to Fabric network
+### Step 2 - Create the certs/keys for the new org and copy to Fabric network
 On the EC2 instance in the new org.
 
 Run the script `./remote-org/step2-register-new-org.sh`. 
@@ -83,6 +83,13 @@ directory. Replace 'org7' with your org name
 * `cd /`
 * `sudo tar xvf ~/org7msp.tar` - this should extract they certs for the new org onto the EFS drive, at /opt/share
 
+### Step 2a - Copy the orderer pem file
+Copy the orderer cert pem file from the original ec2 instance to the new ec2 instance. The pem file should be in the same
+directory on both - i.e. on the EFS drive accessible to the Kuberentes clusters.
+
+You can either use scp for this, or just copy and paste the contents (I use 'vi' to make sure there are no issues with carriage returns/line feeds in the file)
+
+/opt/share/rca-data/org0-ca-chain.pem
 
 ### Step 3 - Update channel config to include new org
 On the EC2 instance in the existing Fabric network, i.e. where the orderer is running.
@@ -90,6 +97,21 @@ On the EC2 instance in the existing Fabric network, i.e. where the orderer is ru
 * Edit the file `./remote-org/step3-create-channel-config.sh`, and add the new org and domain to the two ENV variables at the 
 top of the file
 * Run the script `./remote-org/step3-create-channel-config.sh`. 
+
+### Step 4 - Sign channel config created in step 3
+On the EC2 instance in the existing Fabric network, i.e. where the orderer is running.
+
+* Run the script `./remote-org/step4-sign-channel-config.sh`.
+ 
+You may need to run this against multiple organisations, depending on how your Fabric network is structured. The channel
+config must be signed by the orgs specified in the channel update policy.
+
+### Step 5 - Update channel config created in step 3
+On the EC2 instance in the existing Fabric network, i.e. where the orderer is running.
+
+* Run the script `./remote-org/step5-update-channel-config.sh`.
+
+This updates the channel with the new channel config.
 
 ### Step 6 - Start the new peer
 On the EC2 instance in the new org.
@@ -104,9 +126,18 @@ Copy the <channel-name>.block file from the main Fabric network to the new org, 
 * Copy the <channel-name>.block file to your local laptop or host using (replace with your directory name, EC2 DNS and keypair):
  `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key.pem ec2-user@ec2-18-236-169-96.us-west-2.compute.amazonaws.com:/opt/share/rca-data/mychannel.block mychannel.block`
 * Copy the local <channel-name>.block file to the EFS drive in your new AWS account using (replace with your directory name, EC2 DNS and keypair):
-`scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key-account1.pem /Users/edgema/Documents/apps/fabric-on-eks/mychannel.block  ec2-user@ec2-34-228-23-44.compute-1.amazonaws.com:/opt/share/rca-data/mychannel.block`
+ `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key-account1.pem /Users/edgema/Documents/apps/fabric-on-eks/mychannel.block  ec2-user@ec2-34-228-23-44.compute-1.amazonaws.com:/opt/share/rca-data/mychannel.block`
+
+The file <channel-name>.block would have been created when you first created the channel. If you can't find it,
+you can always pull it from the channel itself using `peer channel fetch 0 mychannel.block`.
+
+The certificates used when a peer connects to an orderer for channel specific tasks (such as joining a channel
+or instantiating chaincode) are the certs contained in the channel config block. It should be pretty obvious that 
+the certs for the new org are NOT in the genesis block as the new org did not exist when the genesis block was created. 
+However, when the peer joins the channel it will read the blocks in the channel and process each config block in turn,
+eventually ending up with the latest config (created in steps 3-5 above).
 
 ### Step 8 - Join the channel
 On the EC2 instance in the new org.
 
-Run the script `./remote-org/step6-start-new-peer.sh`. 
+Run the script `./remote-org/step8-join-channel.sh`. 

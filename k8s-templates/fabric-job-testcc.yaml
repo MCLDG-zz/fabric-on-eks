@@ -16,7 +16,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fabric-installcc
+  name: fabric-testcc
 spec:
   template:
     metadata:
@@ -24,10 +24,10 @@ spec:
        app: hyperledger
        role: client
        org: %ORG%
-       name: fabric-installcc
+       name: fabric-testcc
     spec:
      containers:
-       - name: fabric-installcc
+       - name: fabric-testcc
          image: hyperledger/fabric-ca-tools:x86_64-1.1.0
          env:
           - name: GOPATH
@@ -35,7 +35,7 @@ spec:
           - name: PEERORG
             value: %ORG%
          command: ["sh"]
-         args:  ["-c", "/scripts/install-marbles-cc.sh 2>&1;"]
+         args:  ["-c", "/scripts/test-marbles-cc.sh 2>&1;"]
          volumeMounts:
           - mountPath: /scripts
             name: rca-scripts

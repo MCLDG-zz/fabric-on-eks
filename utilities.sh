@@ -366,6 +366,67 @@ function joinaddorgFabric {
     done
 }
 
+function installChaincode {
+    if [ $# -ne 3 ]; then
+        echo "Usage: installChaincode <home-dir> <repo-name> <new org - the new org joining the channel>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    local NEW_ORG=$3
+    log "Installing chaincode for new org '$NEW_ORG'"
+    cd $HOME
+    getDomain $NEW_ORG
+    kubectl apply -f $REPO/k8s/fabric-job-installcc-$NEW_ORG.yaml --namespace $DOMAIN
+    confirmJobs "fabric-job-installcc"
+    if [ $? -eq 1 ]; then
+        log "Job fabric-job-installcc-$NEW_ORG.yaml failed; exiting"
+        exit 1
+    fi
+    #domain is overwritten by confirmJobs, so we look it up again
+    getDomain $NEW_ORG
+    for i in {1..10}; do
+        if kubectl logs jobs/fabric-job-installcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has joined the channel"; then
+            log "New org installed chaincode by fabric-job-installcc-$NEW_ORG.yaml"
+            break
+        else
+            log "Waiting for fabric-job-installcc-$NEW_ORG.yaml to complete"
+            sleep 5
+        fi
+    done
+}
+
+function testChaincode {
+    if [ $# -ne 3 ]; then
+        echo "Usage: testChaincode <home-dir> <repo-name> <new org - the new org joining the channel>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    local NEW_ORG=$3
+    log "Testing chaincode for new org '$NEW_ORG'"
+    cd $HOME
+    getDomain $NEW_ORG
+    kubectl apply -f $REPO/k8s/fabric-job-testcc-$NEW_ORG.yaml --namespace $DOMAIN
+    confirmJobs "fabric-job-testcc"
+    if [ $? -eq 1 ]; then
+        log "Job fabric-job-testcc-$NEW_ORG.yaml failed; exiting"
+        exit 1
+    fi
+    #domain is overwritten by confirmJobs, so we look it up again
+    getDomain $NEW_ORG
+    for i in {1..10}; do
+        if kubectl logs jobs/fabric-job-testcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has tested the chaincode"; then
+            log "New org tested chaincode by fabric-job-testcc-$NEW_ORG.yaml"
+            break
+        else
+            log "Waiting for fabric-job-testcc-$NEW_ORG.yaml to complete"
+            sleep 5
+        fi
+    done
+}
+
+
 function startRegisterOrgs {
     if [ $# -ne 2 ]; then
         echo "Usage: startRegisterOrgs <home-dir> <repo-name>"

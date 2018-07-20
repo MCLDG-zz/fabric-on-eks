@@ -36,49 +36,13 @@ function main {
    # Convert PEER_ORGS to an array named PORGS
    IFS=', ' read -r -a PORGS <<< "$PEER_ORGS"
 
-   # All peers join the channel
-   for ORG in $PEER_ORGS; do
-      local COUNT=1
-      while [[ "$COUNT" -le $NUM_PEERS ]]; do
-         initPeerVars $ORG $COUNT
-         joinChannel
-         COUNT=$((COUNT+1))
-      done
-   done
-
    # Install chaincode on the 1st peer in each org
    for ORG in $PEER_ORGS; do
       initPeerVars $ORG 1
       installChaincode
    done
 
-   # Instantiate chaincode on the 1st peer of the 2nd org
-   makePolicy
-   instantiateChaincode
-   chaincodeInit
-   sleep 10
-
-   # Query chaincode from the 1st peer of the 1st org
-   initPeerVars ${PORGS[0]} 1
-   switchToUserIdentity
-   chaincodeQuery
-
-   # Invoke chaincode on the 1st peer of the 1st org
-   initPeerVars ${PORGS[0]} 1
-   switchToUserIdentity
-   transferMarble
-
-   ## Install chaincode on 2nd peer of 2nd org
-   initPeerVars ${PORGS[1]} 2
-   installChaincode
-
-   # Query chaincode on 2nd peer of 2nd org
-   sleep 10
-   initPeerVars ${PORGS[1]} 2
-   switchToUserIdentity
-   chaincodeQuery
-
-   log "Congratulations! The marbles chaincode was installed and tested successfully."
+   log "Congratulations! The marbles chaincode was installed successfully."
 
    done=true
 }
@@ -102,56 +66,6 @@ function installChaincode {
    switchToAdminIdentity
    log "Installing marbles chaincode on $PEER_HOST ..."
    peer chaincode install -n marblescc -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/marbles02/go
-}
-
-function instantiateChaincode {
-   initPeerVars ${PORGS[1]} 1
-   switchToAdminIdentity
-   log "Instantiating marbles chaincode on $PEER_HOST ..."
-   peer chaincode instantiate -C $CHANNEL_NAME -n marblescc -v 1.0 -c '{"Args":["init"]}' -P "$POLICY" $ORDERER_CONN_ARGS
-}
-
-function chaincodeInit {
-   # Invoke chaincode on the 1st peer of the 1st org
-   initPeerVars ${PORGS[0]} 2
-   switchToUserIdentity
-   log "Initialising marbles on $PEER_HOST ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["initMarble","marble1","blue","21","edge"]}' $ORDERER_CONN_ARGS
-   peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["initMarble","marble2","red","27","braendle"]}' $ORDERER_CONN_ARGS
-}
-
-function chaincodeQuery {
-   set +e
-   log "Querying marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
-   sleep 1
-   peer chaincode query -C $CHANNEL_NAME -n marblescc -c '{"Args":["readMarble","marble1"]}' >& log.txt
-   cat log.txt
-   peer chaincode query -C $CHANNEL_NAME -n marblescc -c '{"Args":["readMarble","marble2"]}' >& log.txt
-   cat log.txt
-   log "Successfully queried marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
-}
-
-function transferMarble {
-   set +e
-   log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
-   sleep 1
-   peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["transferMarble","marble2","edge"]}' $ORDERER_CONN_ARGS
-   log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_HOST' ..."
-}
-
-function makePolicy  {
-   POLICY="OR("
-   local COUNT=0
-   for ORG in $PEER_ORGS; do
-      if [ $COUNT -ne 0 ]; then
-         POLICY="${POLICY},"
-      fi
-      initOrgVars $ORG
-      POLICY="${POLICY}'${ORG_MSP_ID}.member'"
-      COUNT=$((COUNT+1))
-   done
-   POLICY="${POLICY})"
-   log "policy: $POLICY"
 }
 
 main
