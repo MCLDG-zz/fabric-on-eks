@@ -378,7 +378,7 @@ function installChaincode {
     cd $HOME
     getDomain $NEW_ORG
     kubectl apply -f $REPO/k8s/fabric-job-installcc-$NEW_ORG.yaml --namespace $DOMAIN
-    confirmJobs "fabric-job-installcc"
+    confirmJobs "fabric-installcc"
     if [ $? -eq 1 ]; then
         log "Job fabric-job-installcc-$NEW_ORG.yaml failed; exiting"
         exit 1
@@ -386,7 +386,7 @@ function installChaincode {
     #domain is overwritten by confirmJobs, so we look it up again
     getDomain $NEW_ORG
     for i in {1..10}; do
-        if kubectl logs jobs/fabric-job-installcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has joined the channel"; then
+        if kubectl logs jobs/fabric-installcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has joined the channel"; then
             log "New org installed chaincode by fabric-job-installcc-$NEW_ORG.yaml"
             break
         else
@@ -408,7 +408,7 @@ function testChaincode {
     cd $HOME
     getDomain $NEW_ORG
     kubectl apply -f $REPO/k8s/fabric-job-testcc-$NEW_ORG.yaml --namespace $DOMAIN
-    confirmJobs "fabric-job-testcc"
+    confirmJobs "fabric-testcc"
     if [ $? -eq 1 ]; then
         log "Job fabric-job-testcc-$NEW_ORG.yaml failed; exiting"
         exit 1
@@ -416,7 +416,7 @@ function testChaincode {
     #domain is overwritten by confirmJobs, so we look it up again
     getDomain $NEW_ORG
     for i in {1..10}; do
-        if kubectl logs jobs/fabric-job-testcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has tested the chaincode"; then
+        if kubectl logs jobs/fabric-testcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has tested the chaincode"; then
             log "New org tested chaincode by fabric-job-testcc-$NEW_ORG.yaml"
             break
         else
