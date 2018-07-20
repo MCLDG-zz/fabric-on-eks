@@ -386,7 +386,7 @@ function installChaincode {
     #domain is overwritten by confirmJobs, so we look it up again
     getDomain $NEW_ORG
     for i in {1..10}; do
-        if kubectl logs jobs/fabric-installcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The new org has joined the channel"; then
+        if kubectl logs jobs/fabric-installcc --namespace $DOMAIN --tail=10 | grep -q "Congratulations! The marbles chaincode was installed successfully."; then
             log "New org installed chaincode by fabric-job-installcc-$NEW_ORG.yaml"
             break
         else

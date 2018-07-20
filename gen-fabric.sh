@@ -91,6 +91,7 @@ function main {
     genJoinAddOrg
     genInstallCCAddOrg
     genUpgradeCCAddOrg
+    genTestCCAddOrg
     genDeleteOrg
     log "Creation of Hyperledger Fabric Kubernetes YAML files complete"
 }
@@ -212,6 +213,14 @@ function genInstallCCAddOrg {
     for ORG in $PEER_ORGS; do
         getDomain $ORG
         sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-job-installcc.yaml > ${K8SYAML}/fabric-job-installcc-$ORG.yaml
+    done
+}
+
+function genTestCCAddOrg {
+    log "Generating CLI to test CC Peer K8s YAML files"
+    for ORG in $PEER_ORGS; do
+        getDomain $ORG
+        sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-job-testcc.yaml > ${K8SYAML}/fabric-job-testcc-$ORG.yaml
     done
 }
 
