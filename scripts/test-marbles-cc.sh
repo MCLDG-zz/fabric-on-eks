@@ -79,7 +79,7 @@ function cloneFabricSamples {
 }
 
 function instantiateChaincode {
-   initPeerVars ${PORGS[1]} 1
+   initPeerVars ${PORGS[0]} 1
    switchToAdminIdentity
    log "Instantiating marbles chaincode on $PEER_HOST ..."
    peer chaincode instantiate -C $CHANNEL_NAME -n marblescc -v 1.0 -c '{"Args":["init"]}' -P "$POLICY" $ORDERER_CONN_ARGS
@@ -87,7 +87,7 @@ function instantiateChaincode {
 
 function chaincodeInit {
    # Invoke chaincode on the 1st peer of the 1st org
-   initPeerVars ${PORGS[0]} 2
+   initPeerVars ${PORGS[0]} 1
    switchToUserIdentity
    log "Initialising marbles on $PEER_HOST ..."
    peer chaincode invoke -C $CHANNEL_NAME -n marblescc -c '{"Args":["initMarble","marble1","blue","21","edge"]}' $ORDERER_CONN_ARGS

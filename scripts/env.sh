@@ -181,7 +181,7 @@ function initOrdererVars {
    NUM=$2
    initOrgVars $ORG
    getDomain $ORG
-   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [ $NUM -eq 2 ]; then
+   if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [[ -v $"REMOTE_PEER" ]]; then
      ORDERER_HOST=$EXTERNALORDERERHOSTNAME
      ORDERER_PORT=$EXTERNALORDERERPORT
    else
