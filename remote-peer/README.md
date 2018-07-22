@@ -62,9 +62,9 @@ belong to any channel. They do not have chaincode installed, which means they wo
 scripts will take care of this by creating a new peer, joining the channel and installing chaincode.
 
 If you are creating a brand new peer you'll need the certificate and key information for the organisation the peer belongs
-to. These steps are a quick and dirty way of obtaining this info - not recommended for production use. For production use,
+to. The steps below are a quick and dirty way of obtaining this info - not recommended for production use. For production use,
 you should create a new organisation, generate the certs and keys for the new org, add the new organisation to the channel 
-config, then start the peers for the new org.
+config, then start the peers for the new org. See the README under ./remote-org for details on how to do this.
 
 However, a quick method of setting up a remote peer for an existing org involves copying the existing crypto material.
 This step assumes you have setup a Kubernetes cluster in your new AWS account, with the included EFS drive, as indicated

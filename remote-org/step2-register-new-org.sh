@@ -16,7 +16,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # This script is used to start a remote peer, in a different account/region to the main Fabric network.
-# See the README in the remote-peer folder for details.
+# See the README.md in the remote-peer folder for details.
 
 set -e
 
