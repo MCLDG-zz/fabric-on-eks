@@ -92,7 +92,7 @@ function mergeEnv {
     cd $HOME/$REPO
     start='^##--BEGIN REPLACE CONTENTS--##$'
     end='^##--END REPLACE CONTENTS--##$'
-    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-org/scripts/env-remote-org.sh
+    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r $FILE
         }; /$end/p; d }" $DATA/rca-scripts/env.sh`
     sudo chown ec2-user $DATA/rca-scripts/env.sh
     echo "$newfile" > $DATA/rca-scripts/env.sh
