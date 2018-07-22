@@ -74,3 +74,26 @@ function copyScripts {
     sudo cp $HOME/$REPO/scripts/* $DATA/rca-scripts/
     sudo chmod 777 $DATA/rca-scripts/gen-channel-artifacts.sh
 }
+
+#merge the contents of the env.sh file
+#the env.sh in $SCRIPTS will have been updated with the DNS of the various endpoints, such as ORDERER and
+#ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
+#these DNS endpoints as they are used by the remote peer
+function mergeEnv {
+    if [ $# -ne 3 ]; then
+        echo "Usage: mergeEnv <home-dir> <repo-name> <data-dir - probably something like /opt/share>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    local DATA=$3
+    echo "Merging the ENV files"
+    cd $HOME/$REPO
+    start='^##--BEGIN REPLACE CONTENTS--##$'
+    end='^##--END REPLACE CONTENTS--##$'
+    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-org/scripts/env-remote-org.sh
+        }; /$end/p; d }" $DATA/rca-scripts/env.sh`
+    sudo chown ec2-user $DATA/rca-scripts/env.sh
+    echo "$newfile" > $DATA/rca-scripts/env.sh
+    cp $DATA/rca-scripts/env.sh scripts/env.sh
+}

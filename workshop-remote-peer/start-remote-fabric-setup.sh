@@ -25,13 +25,12 @@ function main {
     cd $HOME/$REPO
     source util-prep.sh
     updateRepo $HOME $REPO
-    mergeEnv
-    #makeDirs $DATADIR
+    mergeEnv $HOME $REPO $DATADIR
     copyScripts $HOME $REPO $DATADIR
     cd $HOME/$REPO
     source scripts/env.sh
     source utilities.sh
-    #makeDirsForOrg $DATADIR
+    makeDirsForOrg $DATADIR
     genTemplates $HOME $REPO
     createNamespaces $HOME $REPO
     startPVC $HOME $REPO

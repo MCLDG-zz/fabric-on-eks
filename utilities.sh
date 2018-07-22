@@ -426,21 +426,6 @@ function testChaincode {
     done
 }
 
-function mergeEnv {
-    #merge the contents of the env.sh file
-    #the env.sh in $SCRIPTS will have been updated with the DNS of the various endpoints, such as ORDERER and
-    #ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
-    #these DNS endpoints as they are used by the remote peer
-    cd $HOME/$REPO
-    start='^##--BEGIN REPLACE CONTENTS--##$'
-    end='^##--END REPLACE CONTENTS--##$'
-    newfile=`sed -e "/$start/,/$end/{ /$start/{p; r remote-org/scripts/env-remote-org.sh
-        }; /$end/p; d }" $SCRIPTS/env.sh`
-    sudo chown ec2-user $SCRIPTS/env.sh
-    echo "$newfile" > $SCRIPTS/env.sh
-    cp $SCRIPTS/env.sh scripts/env.sh
-}
-
 function startRegisterOrgs {
     if [ $# -ne 2 ]; then
         echo "Usage: startRegisterOrgs <home-dir> <repo-name>"
