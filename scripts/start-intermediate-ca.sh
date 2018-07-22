@@ -11,10 +11,6 @@ initOrgVars $ORG
 
 set -e
 
-# Wait for the root CA to start
-# waitPort "root CA to start" 60 $ROOT_CA_LOGFILE $ROOT_CA_HOST 7054
-#TODO wait for root CA to start
-
 # Initialize the intermediate CA
 fabric-ca-server init -b $BOOTSTRAP_USER_PASS -u $PARENT_URL
 

@@ -36,6 +36,7 @@ function main {
     startPVC $HOME $REPO
     startRCA $HOME $REPO
     startICA $HOME $REPO
+    sleep 10
     startRegisterPeers $HOME $REPO
     echo "Remote Fabric setup complete"
 }

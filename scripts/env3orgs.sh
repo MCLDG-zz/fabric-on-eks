@@ -404,36 +404,6 @@ function dowait {
    echo ""
 }
 
-# Wait for a process to begin to listen on a particular host and port
-# Usage: waitPort <what> <timeoutInSecs> <errorLogFile> <host> <port>
-function waitPort {
-   set +e
-   local what=$1
-   local secs=$2
-   local logFile=$3
-   local host=$4
-   local port=$5
-   nc -z $host $port > /dev/null 2>&1
-   if [ $? -ne 0 ]; then
-      log -n "Waiting for $what ..."
-      local starttime=$(date +%s)
-      while true; do
-         sleep 1
-         nc -z $host $port > /dev/null 2>&1
-         if [ $? -eq 0 ]; then
-            break
-         fi
-         if [ "$(($(date +%s)-starttime))" -gt "$secs" ]; then
-            fatal "Failed waiting for $what; see $logFile"
-         fi
-         echo -n "."
-      done
-      echo ""
-   fi
-   set -e
-}
-
-
 # log a message
 function log {
    if [ "$1" = "-n" ]; then
