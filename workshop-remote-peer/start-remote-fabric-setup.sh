@@ -25,7 +25,7 @@ function main {
     cd $HOME/$REPO
     source util-prep.sh
     updateRepo $HOME $REPO
-    mergeEnv $HOME $REPO $DATADIR
+    mergeEnv $HOME $REPO $DATADIR $MERGEFILE
     copyScripts $HOME $REPO $DATADIR
     cd $HOME/$REPO
     source scripts/env.sh
@@ -44,5 +44,6 @@ SDIR=$(dirname "$0")
 DATADIR=/opt/share/
 SCRIPTS=$DATADIR/rca-scripts
 REPO=fabric-on-eks
+MERGEFILE=remote-peer/scripts/env-remote-peer.sh
 main
 

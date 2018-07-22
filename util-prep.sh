@@ -80,13 +80,14 @@ function copyScripts {
 #ANCHOR PEER. We need to merge the contents of env-remote-peer.sh into $SCRIPTS/env.sh in order to retain
 #these DNS endpoints as they are used by the remote peer
 function mergeEnv {
-    if [ $# -ne 3 ]; then
-        echo "Usage: mergeEnv <home-dir> <repo-name> <data-dir - probably something like /opt/share>"
+    if [ $# -ne 4 ]; then
+        echo "Usage: mergeEnv <home-dir> <repo-name> <data-dir - probably something like /opt/share> <filename - env file to be merged into main env.sh>"
         exit 1
     fi
     local HOME=$1
     local REPO=$2
     local DATA=$3
+    local FILE=$4
     echo "Merging the ENV files"
     cd $HOME/$REPO
     start='^##--BEGIN REPLACE CONTENTS--##$'

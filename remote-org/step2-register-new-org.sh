@@ -25,7 +25,7 @@ function main {
     echo "Have you copied env.sh from the EFS drive in your main Fabric network (see /opt/share/rca-scripts/env.sh) to the same location in the EFS drive in your new org?"
     read -p "Press enter to continue"
     cd $HOME/$REPO
-    mergeEnv
+    mergeEnv $HOME $REPO $DATADIR $MERGEFILE
     source util-prep.sh
     source scripts/env.sh
     source utilities.sh
@@ -43,5 +43,6 @@ SDIR=$(dirname "$0")
 DATADIR=/opt/share/
 SCRIPTS=$DATADIR/rca-scripts
 REPO=fabric-on-eks
+MERGEFILE=remote-org/scripts/env-remote-org.sh
 main
 
