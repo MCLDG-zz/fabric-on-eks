@@ -53,26 +53,24 @@ sudo yum install -y amazon-efs-utils
 ```
 
 ### Step 2: Create an EC2 instance and EFS 
-You will need an EC2 instance, which you will SSH into in order to start and test the Fabric network. You will 
-also need an EFS volume for storing common scripts and public keys. The EFS volume must be accessible from
-the Kubernetes cluster. Follow the steps below, which will create the EFS and make it available to the K8s cluster.
+You will need an EC2 bastion, which you will use to start and test the Fabric network. You will also need an EFS volume for 
+storing common scripts and the certificates used by Fabric. The EFS volume must be accessible from both the EC2 bastion and 
+the worker nodes in the Kubernetes cluster. Follow the steps below, which will create the EFS and make it available to the K8s cluster.
 
-Check the parameters in efs/deploy-ec2.sh and update them as follows:
-* The VPC and Subnet params should be those of your existing K8s cluster worker nodes
-* Keyname is an AWS EC2 keypair you own, that you have previously saved to your laptop. You'll need this to access the EC2 
-instance created by deploy-ec2.sh
+In the repo directory, check the parameters in efs/deploy-ec2.sh and update them as follows:
+* The VPC and Subnet should be those of your existing K8s cluster worker nodes
+* Keyname is an AWS EC2 keypair you own, that you have previously saved to your laptop. You'll need this to access the EC2 bastion created by deploy-ec2.sh
 * VolumeName is the name assigned to your EFS volume (there is no need to change this)
 * Region should match the region where your K8s cluster is deployed
 
-Once all the parameters are set, in a terminal window run ./efs/deploy-ec2.sh. Check the CFN console for completion. Once 
-the CFN stack is complete, SSH to one of the EC2 instances using the keypair above. Either of the EC2 instances will work.
-Once you've setup an EC2 instance, continue to SSH into the same instance.
-
-The EFS should be mounted in /opt/share. After you've SSH'd, check this:
+Once all the parameters are set, in a terminal window, run 
 
 ```bash
-ls -l /opt/share
+./efs/deploy-ec2.sh 
 ```
+
+Check the CFN console for completion. Once the CFN stack is complete, SSH to one of the EC2 bastion instances using the keypair 
+above. Either of the EC2 instances will work. Once you've setup an EC2 instance, continue to SSH into the same EC2 bastion instance.
 
 ### Step 3: Prepare the EC2 instance for use
 The EC2 instance you have created in Step 2 should already have kubectl installed. However, kubectl will have no
@@ -142,8 +140,8 @@ vi gen-fabric.sh
 
 Look for the line starting with `EFSSERVER=`, and replace the URL with the one you copied from the EFS console. Using
 vi you can simply move the cursor over the first character after `EFSSERVER=` and hit the 'x' key until the existing
-URL is deleted. Then hit the 'i' key and ctrl-v paste the new URL. Shift-zz to save and exit vi. See, you're a vi expert
-already.
+URL is deleted. Then hit the 'i' key and ctrl-v to paste the new URL. Hit escale, then Shift-zz to save and exit vi. 
+See, you're a vi expert already.
 
 ### Step 6: Get the Fabric crypto information
 Before creating your Fabric peer you'll need the certificate and key information for the organisation the peer belongs
@@ -156,8 +154,10 @@ this information available in an S3 bucket - you just need to download it and co
 * SSH into the EC2 instance you created in Step 2
 * Download the crypto information:
 ```bash
-S3 get blah blah
+cd
+TBC - S3 get blah blah
 ```
+* Extract the crypto material:
 * Extract the crypto material:
 ```bash
 cd /
@@ -210,7 +210,7 @@ file used by the scripts that configure Fabric.
       Try to make this unique within the network. Example: PEER_PREFIX="michaelpeer"
 * Don't change anything else.
 
-### Step 8: Register Fabric user with the Fabric certificate authority
+### Step 8: Register Fabric identities with the Fabric certificate authority
 Before we can start our Fabric peer we must register it with the Fabric certificate authority (CA). This step
 will start Fabric CA and register our peer:
 
@@ -222,73 +222,74 @@ Now let's investigate the results of the previous script. In the statements belo
 selected in step 7:
 
 ```bash
-kubectl get po -n org5 
+kubectl get po -n org1 
 ```
 
 You should see something similar to this. So far we have started a root CA (rca), an intermediate CA (ica), and a pod that registers
 peers identities (register-p).
 
 ```bash
-NAME                              READY     STATUS    RESTARTS   AGE
-ica-org5-589fdcbb86-xpdsn         1/1       Running   0          28s
-rca-org5-d5bb98789-z488b          1/1       Running   0          1m
-register-p-org5-6c9964c44-h69qg   1/1       Running   0          21s
+$ kubectl get po -n org1
+NAME                               READY     STATUS    RESTARTS   AGE
+ica-org1-5694787654-g5j9l          1/1       Running   0          45s
+rca-org1-6c769cc569-5cfqb          1/1       Running   0          1m
+register-p-org1-66bd5688b4-fhzmh   1/1       Running   0          28s
 ```
 
 Look at the logs for the register pod. Replace the pod name with your own pod name, the one returned by 'kubectl get po -n org5 ':
 
 ```bash
-kubectl logs register-p-org5-6c9964c44-h69qg -n org5
+kubectl logs register-p-org1-66bd5688b4-fhzmh -n org1
 ```
 
 You'll see something like this (edited for brevity), as the CA admin is enrolled with the intermediate CA, then the
 peer user (in this case 'michaelpeer1-org5') is registered with the CA:
 
 ```bash
-$ kubectl logs deploy/register-p-org5 -n org5
-##### 2018-07-22 02:07:58 Registering peer for org org5 ...
-##### 2018-07-22 02:07:58 Enrolling with ica-org5.org5 as bootstrap identity ...
-2018/07/22 02:07:58 [DEBUG] Home directory: /root/cas/ica-org5.org5
-2018/07/22 02:07:58 [INFO] Created a default configuration file at /root/cas/ica-org5.org5/fabric-ca-client-config.yaml
-2018/07/22 02:07:58 [DEBUG] Client configuration settings: &{URL:https://ica-org5-admin:ica-org5-adminpw@ica-org5.org5:7054 MSPDir:msp TLS:{Enabled:true CertFiles:[/data/org5-ca-chain.pem] Client:{KeyFile: CertFile:}} Enrollment:{ Name: Secret:**** Profile: Label: CSR:<nil> CAName: AttrReqs:[]  } CSR:{CN:ica-org5-admin Names:[{C:US ST:North Carolina L: O:Hyperledger OU:Fabric SerialNumber:}] Hosts:[register-p-org5-6c9964c44-bfjp8] KeyRequest:<nil> CA:<nil> SerialNumber:} ID:{Name: Type:client Secret: MaxEnrollments:0 Affiliation:org1 Attributes:[] CAName:} Revoke:{Name: Serial: AKI: Reason: CAName: GenCRL:false} CAInfo:{CAName:} CAName: CSP:0xc4201aac90}
-2018/07/22 02:07:58 [DEBUG] Entered runEnroll
-.
-.
-.
-2018/07/22 02:07:58 [DEBUG] Sending request
-POST https://ica-org5.org5:7054/enroll
-{"hosts":["register-p-org5-6c9964c44-bfjp8"],"certificate_request":"-----BEGIN CERTIFICATE REQUEST-----\nMIIBXzCCAQUCAQAwZjELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9s\naW5hMRQwEgYDVQQKEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRcwFQYD\nVQQDEw5pY2Etb3JnNS1hZG1pbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEKN\nHyFYFebtDUEGoNaQk0vqLBLtXt4gB4CBGsJormllPWTiz8kZDi6hhBVwED2Qg4MF\nOrWYe4vMJ8LXXU/L2QKgPTA7BgkqhkiG9w0BCQ4xLjAsMCoGA1UdEQQjMCGCH3Jl\nZ2lzdGVyLXAtb3JnNS02Yzk5NjRjNDQtYmZqcDgwCgYIKoZIzj0EAwIDSAAwRQIh\nAPeoD6q+jZ2aIdky6k6PVMdvzrm6Fp/1FnSndlAKvjy7AiAFn/kir8Xc39MYvIsR\nQDQnf8gcpSOs3UZNYfy8f6bIOg==\n-----END CERTIFICATE REQUEST-----\n","profile":"","crl_override":"","label":"","NotBefore":"0001-01-01T00:00:00Z","NotAfter":"0001-01-01T00:00:00Z","CAName":""}
-2018/07/22 02:07:58 [DEBUG] Received response
-statusCode=201 (201 Created)
-2018/07/22 02:07:58 [DEBUG] Response body result: map[Cert:LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYRENDQWdLZ0F3SUJBZ0lVVDhNdmczdVdnektET3JJNXZmRUFLeGh1WHFjd0NnWUlLb1pJemowRUF3SXcKWmpFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1kyeHBaVzUwTVJjd0ZRWURWUVFERXc1eVkyRXRiM0puCk5TMWhaRzFwYmpBZUZ3MHhPREEzTWpJd01qQXpNREJhRncweE9UQTNNakl3TWpBNE1EQmFNR1l4Q3pBSkJnTlYKQkFZVEFsVlRNUmN3RlFZRFZRUUlFdzVPYjNKMGFDQkRZWEp2YkdsdVlURVVNQklHQTFVRUNoTUxTSGx3WlhKcwpaV1JuWlhJeER6QU5CZ05WQkFzVEJtTnNhV1Z1ZERFWE1CVUdBMVVFQXhNT2FXTmhMVzl5WnpVdFlXUnRhVzR3CldUQVRCZ2NxaGtqT1BRSUJCZ2dxaGtqT1BRTUJCd05DQUFSQ2pSOGhXQlhtN1ExQkJxRFdrSk5MNml3UzdWN2UKSUFlQWdSckNhSzVwWlQxazRzL0pHUTR1b1lRVmNCQTlrSU9EQlRxMW1IdUx6Q2ZDMTExUHk5a0NvNEdOTUlHSwpNQTRHQTFVZER3RUIvd1FFQXdJSGdEQU1CZ05WSFJNQkFmOEVBakFBTUIwR0ExVWREZ1FXQkJSdENJK25hNmdoCnRKdjVNU1ViQm1KdkVjSmxGREFmQmdOVkhTTUVHREFXZ0JUczQ4bzhGN2RBLzl6ZFdNUGpsY05oQTRMNlFEQXEKQmdOVkhSRUVJekFoZ2g5eVpXZHBjM1JsY2kxd0xXOXlaelV0Tm1NNU9UWTBZelEwTFdKbWFuQTRNQW9HQ0NxRwpTTTQ5QkFNQ0EwZ0FNRVVDSVFDZnNTWGNQUHRaQjZpK1l5Nkc5WmVDVW4xcy9tUFN2Q1pJelVaV3ViU3Fid0lnClJHaE80TXFiay82Tkl3N0ROZUREVkhTb1F6WFkrejkyU1pJUnZIZGwxUmM9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K ServerInfo:map[CAName:ica-org5.org5 CAChain:LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNNekNDQWRtZ0F3SUJBZ0lVTDlhUDhPM283V0ZjUzM3cm9WNXJLcnBLRXBNd0NnWUlLb1pJemowRUF3SXcKWlRFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puCk5TNXZjbWMxTUI0WERURTRNRGN5TWpBeE1EWXdNRm9YRFRJek1EY3lNVEF4TVRFd01Gb3daakVMTUFrR0ExVUUKQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRS0V3dEllWEJsY214bApaR2RsY2pFUE1BMEdBMVVFQ3hNR1kyeHBaVzUwTVJjd0ZRWURWUVFERXc1eVkyRXRiM0puTlMxaFpHMXBiakJaCk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkpZSTUyem1WNmpvejJ5c2IxRnZpN2NmNU5vdUhvTnIKK0orMUtnUFFwbXlnMGJMVCtTZldzVXh2Tml1eS9rRHNUOVQ0Kzl4K0l6Zk1Wc1A3U2JJbkIzdWpaakJrTUE0RwpBMVVkRHdFQi93UUVBd0lCQmpBU0JnTlZIUk1CQWY4RUNEQUdBUUgvQWdFQU1CMEdBMVVkRGdRV0JCVHM0OG84CkY3ZEEvOXpkV01QamxjTmhBNEw2UURBZkJnTlZIU01FR0RBV2dCVHNnNXB1bUx0UzV5WE1YSHExdHU0TDFhYWkKNGpBS0JnZ3Foa2pPUFFRREFnTklBREJGQWlFQSs1eGUrTTl3aXp6cVR0RHhteisxSElnR0VpVTZBQVhBenI3LwpUOGsvK3JVQ0lHeFZaUkRmV2RLQVVvcHRUNjNLajFQc2IxZUlhNHpKSGZhbVVXdkJSNERRCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNFVENDQWJlZ0F3SUJBZ0lVZVVxMWZyMW11dUpuSzgrZ21PUjh3czRLNHV3d0NnWUlLb1pJemowRUF3SXcKWlRFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puCk5TNXZjbWMxTUI0WERURTRNRGN5TWpBeE1EVXdNRm9YRFRNek1EY3hPREF4TURVd01Gb3daVEVMTUFrR0ExVUUKQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRS0V3dEllWEJsY214bApaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puTlM1dmNtYzFNRmt3CkV3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFd1A2Q0JaQ2V5bDIyMGdIdjN2bndMOEVpR1Z1NGNRdGEKZDNTcjJuems0TGMwSEZWeG8wdXplbG9QR05uaUZ1blFjZ3FwcnkvTG5lVDJsYmZtTGcyK0c2TkZNRU13RGdZRApWUjBQQVFIL0JBUURBZ0VHTUJJR0ExVWRFd0VCL3dRSU1BWUJBZjhDQVFFd0hRWURWUjBPQkJZRUZPeURtbTZZCnUxTG5KY3hjZXJXMjdndlZwcUxpTUFvR0NDcUdTTTQ5QkFNQ0EwZ0FNRVVDSVFEZ1h5MHN6elJWT2JTbDNOTmsKS2xFN2hQR1BSR2FUeDMwTFdEUnBWNlpOUUFJZ2FoWC84azNyTGd6T1U4OWRhVFFDTVpQaGFkVzBBOEQ3cXh6YgoxRUh4bEVzPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg== Version:]]
-2018/07/22 02:07:58 [DEBUG] newEnrollmentResponse ica-org5-admin
-2018/07/22 02:07:58 [INFO] Stored client certificate at /root/cas/ica-org5.org5/msp/signcerts/cert.pem
-2018/07/22 02:07:58 [INFO] Stored root CA certificate at /root/cas/ica-org5.org5/msp/cacerts/ica-org5-org5-7054.pem
-2018/07/22 02:07:58 [INFO] Stored intermediate CA certificates at /root/cas/ica-org5.org5/msp/intermediatecerts/ica-org5-org5-7054.pem
-##### 2018-07-22 02:07:58 Registering michaelpeer1-org5 with ica-org5.org5
-2018/07/22 02:07:58 [DEBUG] Home directory: /root/cas/ica-org5.org5
+$ kubectl logs register-p-org1-66bd5688b4-fhzmh -n org1
+##### 2018-07-22 02:52:31 Registering peer for org org1 ...
+##### 2018-07-22 02:52:31 Enrolling with ica-org1.org1 as bootstrap identity ...
+2018/07/22 02:52:31 [DEBUG] Home directory: /root/cas/ica-org1.org1
+2018/07/22 02:52:31 [INFO] Created a default configuration file at /root/cas/ica-org1.org1/fabric-ca-client-config.yaml
+2018/07/22 02:52:31 [DEBUG] Client configuration settings: &{URL:https://ica-org1-admin:ica-org1-adminpw@ica-org1.org1:7054 MSPDir:msp TLS:{Enabled:true CertFiles:[/data/org1-ca-chain.pem] Client:{KeyFile: CertFile:}} Enrollment:{ Name: Secret:**** Profile: Label: CSR:<nil> CAName: AttrReqs:[]  } CSR:{CN:ica-org1-admin Names:[{C:US ST:North Carolina L: O:Hyperledger OU:Fabric SerialNumber:}] Hosts:[register-p-org1-66bd5688b4-fhzmh] KeyRequest:<nil> CA:<nil> SerialNumber:} ID:{Name: Type:client Secret: MaxEnrollments:0 Affiliation:org1 Attributes:[] CAName:} Revoke:{Name: Serial: AKI: Reason: CAName: GenCRL:false} CAInfo:{CAName:} CAName: CSP:0xc42016df80}
+2018/07/22 02:52:31 [DEBUG] Entered runEnroll
 .
 . 
 .
-2018/07/22 02:07:58 [DEBUG] Sending request
-POST https://ica-org5.org5:7054/register
-{"id":"michaelpeer1-org5","type":"peer","secret":"michaelpeer1-org5pw","affiliation":"org1"}
-2018/07/22 02:07:59 [DEBUG] Received response
+2018/07/22 02:52:31 [DEBUG] Sending request
+POST https://ica-org1.org1:7054/enroll
+{"hosts":["register-p-org1-66bd5688b4-fhzmh"],"certificate_request":"-----BEGIN CERTIFICATE REQUEST-----\nMIIBXzCCAQYCAQAwZjELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9s\naW5hMRQwEgYDVQQKEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRcwFQYD\nVQQDEw5pY2Etb3JnMS1hZG1pbjBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABC5+\n+w04ZAjYiZDBzfc779+oYekJ2TURk6KqxL2Bw6BQXt251kh9VSScLrpb7qTCPMUF\nsg7pbTzsxyaauWu/fAGgPjA8BgkqhkiG9w0BCQ4xLzAtMCsGA1UdEQQkMCKCIHJl\nZ2lzdGVyLXAtb3JnMS02NmJkNTY4OGI0LWZoem1oMAoGCCqGSM49BAMCA0cAMEQC\nIBgeEW7fya+V0+7E8EgMdTV+krDiZsouX9ZsR+C6yf5KAiBrDLMMTb7y697HrROR\nax/7/enFQc78wboYRV3fjTEnEA==\n-----END CERTIFICATE REQUEST-----\n","profile":"","crl_override":"","label":"","NotBefore":"0001-01-01T00:00:00Z","NotAfter":"0001-01-01T00:00:00Z","CAName":""}
+2018/07/22 02:52:32 [DEBUG] Received response
 statusCode=201 (201 Created)
-2018/07/22 02:07:59 [DEBUG] Response body result: map[secret:michaelpeer1-org5pw]
-2018/07/22 02:07:59 [DEBUG] The register request completed successfully
-Password: michaelpeer1-org5pw
-##### 2018-07-22 02:07:59 Finished registering peer for org org5
+2018/07/22 02:52:32 [DEBUG] Response body result: map[Cert:LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNYVENDQWdPZ0F3SUJBZ0lVUVI3ZmNXbVlHQVVnemFkSE5LWDY3cnRHOEw4d0NnWUlLb1pJemowRUF3SXcKWmpFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1kyeHBaVzUwTVJjd0ZRWURWUVFERXc1eVkyRXRiM0puCk1TMWhaRzFwYmpBZUZ3MHhPREEzTWpJd01qUTRNREJhRncweE9UQTNNakl3TWpVek1EQmFNR1l4Q3pBSkJnTlYKQkFZVEFsVlRNUmN3RlFZRFZRUUlFdzVPYjNKMGFDQkRZWEp2YkdsdVlURVVNQklHQTFVRUNoTUxTSGx3WlhKcwpaV1JuWlhJeER6QU5CZ05WQkFzVEJtTnNhV1Z1ZERFWE1CVUdBMVVFQXhNT2FXTmhMVzl5WnpFdFlXUnRhVzR3CldUQVRCZ2NxaGtqT1BRSUJCZ2dxaGtqT1BRTUJCd05DQUFRdWZ2c05PR1FJMkltUXdjMzNPKy9mcUdIcENkazEKRVpPaXFzUzlnY09nVUY3ZHVkWklmVlVrbkM2NlcrNmt3anpGQmJJTzZXMDg3TWNtbXJscnYzd0JvNEdPTUlHTApNQTRHQTFVZER3RUIvd1FFQXdJSGdEQU1CZ05WSFJNQkFmOEVBakFBTUIwR0ExVWREZ1FXQkJTc0M1K3JGUXFMCkM3aFM2T1A2Q3NtRVI3Y1kvekFmQmdOVkhTTUVHREFXZ0JSdlVPRlNVc3p2YXRvQVhkYThSSUxiZ0lFamFqQXIKQmdOVkhSRUVKREFpZ2lCeVpXZHBjM1JsY2kxd0xXOXlaekV0TmpaaVpEVTJPRGhpTkMxbWFIcHRhREFLQmdncQpoa2pPUFFRREFnTklBREJGQWlFQStDdms1alpIbXd4cFRZL3NWazdnam5yN2p3UUYvdUd6WUpXQ29LY2VUcklDCklFc0o3Y0xJZWUzVVBwdFhKMjZCdml0a2Z1NUpWb2dTaFIxcVNFM2FTN1lmCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K ServerInfo:map[CAName:ica-org1.org1 CAChain:LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNNakNDQWRtZ0F3SUJBZ0lVYjV0ZlNKUFZqVUtFZ2NWckY5S3hDczFHMUprd0NnWUlLb1pJemowRUF3SXcKWlRFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puCk1TNXZjbWN4TUI0WERURTRNRGN5TWpBeU5EY3dNRm9YRFRJek1EY3lNVEF5TlRJd01Gb3daakVMTUFrR0ExVUUKQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRS0V3dEllWEJsY214bApaR2RsY2pFUE1BMEdBMVVFQ3hNR1kyeHBaVzUwTVJjd0ZRWURWUVFERXc1eVkyRXRiM0puTVMxaFpHMXBiakJaCk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkpXaXlhbjNGREJiWXZyNlVZNWlwMkJMYXFJYzA2UVAKRFc4RXd4ZVphZzREbllTWDlodytLRStkTVV4QmlkaUlWaUpqUVAwOGRic3NkeVJ3Q3pGbkY4R2paakJrTUE0RwpBMVVkRHdFQi93UUVBd0lCQmpBU0JnTlZIUk1CQWY4RUNEQUdBUUgvQWdFQU1CMEdBMVVkRGdRV0JCUnZVT0ZTClVzenZhdG9BWGRhOFJJTGJnSUVqYWpBZkJnTlZIU01FR0RBV2dCVDhWUGluVXdkclU5U2dhcDYzdktRYlZuQVkKTmpBS0JnZ3Foa2pPUFFRREFnTkhBREJFQWlCdllIOXhLZlg4bGZmZlpFZnp0NUhDSDUxRWsvZDh4em4zV1NRNwpwaHRjVndJZ0kwRHdtaVVVSmZVZDVpSXUrU0lyMXNDT3VvQ1JjZ0ZsMjNaMENReENSc2M9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNFVENDQWJlZ0F3SUJBZ0lVZXRScVMzbW9TbWZiZDBSTVc5cTBaQlJ1ZU1Jd0NnWUlLb1pJemowRUF3SXcKWlRFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puCk1TNXZjbWN4TUI0WERURTRNRGN5TWpBeU5EY3dNRm9YRFRNek1EY3hPREF5TkRjd01Gb3daVEVMTUFrR0ExVUUKQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRS0V3dEllWEJsY214bApaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puTVM1dmNtY3hNRmt3CkV3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFVy9sNCt4STdhODlGczRXTUorcXNuWlJUenZ1c1FrUTMKbjd2dVdGdW1aaWVjUXZINkNsR1k5UTVFbHVQdWgyTWZ5akw4elpIM2R0WWpoMFdUZ1B2aUg2TkZNRU13RGdZRApWUjBQQVFIL0JBUURBZ0VHTUJJR0ExVWRFd0VCL3dRSU1BWUJBZjhDQVFFd0hRWURWUjBPQkJZRUZQeFUrS2RUCkIydFQxS0JxbnJlOHBCdFdjQmcyTUFvR0NDcUdTTTQ5QkFNQ0EwZ0FNRVVDSVFDV3poL0d3a3dxeEUxTmgvRHoKa1VKb2N5ckh1bDdFYStoNmJxWC90ak9xR2dJZ1hNQ0N4L3BDUS9LRkhmL2xSTllDeGQySy91NUxLS3ZwejBCeQo1U1BNUCtnPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg== Version:]]
+2018/07/22 02:52:32 [DEBUG] newEnrollmentResponse ica-org1-admin
+2018/07/22 02:52:32 [INFO] Stored client certificate at /root/cas/ica-org1.org1/msp/signcerts/cert.pem
+2018/07/22 02:52:32 [INFO] Stored root CA certificate at /root/cas/ica-org1.org1/msp/cacerts/ica-org1-org1-7054.pem
+2018/07/22 02:52:32 [INFO] Stored intermediate CA certificates at /root/cas/ica-org1.org1/msp/intermediatecerts/ica-org1-org1-7054.pem
+##### 2018-07-22 02:52:32 Registering michaelpeer1-org1 with ica-org1.org1
+2018/07/22 02:52:32 [DEBUG] Home directory: /root/cas/ica-org1.org1
+.
+. 
+.
+2018/07/22 02:52:32 [DEBUG] Sending request
+POST https://ica-org1.org1:7054/register
+{"id":"michaelpeer1-org1","type":"peer","secret":"michaelpeer1-org1pw","affiliation":"org1"}
+2018/07/22 02:52:32 [DEBUG] Received response
+statusCode=201 (201 Created)
+2018/07/22 02:52:32 [DEBUG] Response body result: map[secret:michaelpeer1-org1pw]
+2018/07/22 02:52:32 [DEBUG] The register request completed successfully
+Password: michaelpeer1-org1pw
+##### 2018-07-22 02:52:32 Finished registering peer for org org1
 ```
 
-### Step 9:
+### Step 9: Start the peer
 We are now ready to start the new peer. The peer runs as a pod in Kubernetes. Let's take a look at the pod spec before
 we deploy it. Replace 'michaelpeer1' with the name of your peer, and replace 'org5' with the org you selected. If you 
 are unsure, you can simply do 'ls k8s' to view the yaml files that were generated based on your selections, and find
 the file start starts with 'fabric-deployment-remote-peer-'.
 
 ```bash
-more k8s/fabric-deployment-remote-peer-michaelpeer1-org5.yaml
+more k8s/fabric-deployment-remote-peer-michaelpeer1-org1.yaml
 ```
 
 There are a few things of interest in the pod yaml file:
@@ -300,29 +301,26 @@ There are a few things of interest in the pod yaml file:
 So let's deploy the peer and check the logs:
 
 ```bash
-kubectl apply -f k8s/fabric-deployment-remote-peer-michaelpeer1-org5.yaml
-
+kubectl apply -f k8s/fabric-deployment-remote-peer-michaelpeer1-org1.yaml
+kubectl logs deploy/michaelpeer1-org1 -n org1 -c michaelpeer1-org1
 ```
 
-SSH into the EC2 instance you created in Step 2, navigate to the `fabric-on-eks` 
-repo and run:
+You'll see a large number of log entries, which you are free to look at. The most important entries are a few
+lines from the end of the log file. Look for these, and make sure there are no errors after these lines:
 
 ```bash
-./remote-peer/start-remote-peer.sh
+2018-07-22 03:05:49.145 UTC [nodeCmd] serve -> INFO 1ca Starting peer with ID=[name:"michaelpeer1-org1" ], network ID=[dev], address=[100.96.2.149:7051]
+2018-07-22 03:05:49.146 UTC [nodeCmd] serve -> INFO 1cb Started peer with ID=[name:"michaelpeer1-org1" ], network ID=[dev], address=[100.96.2.149:7051]
 ```
 
-This will do the following:
+If you can't find the entries, try grep:
 
-* Create a merged copy of env.sh on the EFS drive (i.e. in /opt/share/rca-scripts), which includes the selections you
-made above (e.g. PEER_PREFIX)
-* Generate a kubernetes deployment YAML for the remote peer
-* Start a local certificate authority (CA). You'll need this to generate a new user for your peer
-* Register your new peer with the CA
-* Start the new peer
+```bash
+kubectl logs deploy/michaelpeer1-org1 -n org1 -c michaelpeer1-org1 | grep 'Started peer'
+```
 
-The peer will start, but will not be joined to any channels. At this point the peer has little use as it does not 
-maintain any ledger state. To start building a ledger on the peer we need to join a channel.
-
+Your peer has started, but..... it's useless at this point. It hasn't joined any channels, it can't run chaincode
+and it does not maintain any ledger state. To start building a ledger on the peer we need to join a channel.
 ### Join the peer to a channel
 I've created a Kubernetes deployment YAML that will deploy a POD to execute a script, `test-fabric-marbles`, that will
 join the peer created above to a channel (the channel name is in env.sh), install the marbles demo chaincode, and 
@@ -335,3 +333,17 @@ kubectl apply -f k8s/fabric-deployment-test-fabric-marbles.yaml
 This will connect the new peer to the channel. You should then check the peer logs to ensure
 all the TX are being sent to the new peer. If there are existing blocks on the channel you should see them
 replicating to the new peer. Look for messages in the log file such as `Channel [mychannel]: Committing block [14385] to storage`.
+
+### Deploy Marbles
+Marbles requires connectivity to three Fabric components:
+
+* Orderer: the Orderer was created by the facilitator before the workshop started. The facilitator will provide the endpoint
+* Peer: this is the peer you started in step 9. We will expose this using an NLB below (NLB because peers communicate using gRPC)
+* CA: this is the CA you started in step 8. We will expose this using an ELB below (ELB because the CA server exposes a REST API)
+
+Marbles requires changes to the config/connection_profile_tls.json file.
+
+NOTE: Marbles running locally cannot connect to the ELB port 7054 if you are running your VPN software. Please
+stop the VPN before connecting.
+
+I also needed to 

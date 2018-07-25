@@ -42,7 +42,7 @@ the CFN stack is complete, SSH to one of the EC2 instances using the keypair abo
 The EFS should be mounted in /opt/share
 
 ### Step 3: Prepare the EC2 instance for use
-The EC2 instance you have created in Step 2 should already have kubectl installed. However, kubectl will have not
+The EC2 instance you have created in Step 2 should already have kubectl installed. However, kubectl will have no
 context and will not be pointing to any kubernetes cluster. We need to point it to the K8s cluster we created in Step 1.
 
 The easiest method (though this should be improved) is to copy the contents of your own ~/.kube/config file from 

@@ -17,7 +17,7 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: %DOMAIN%
-  name: peer%NUM%-%ORG%-nlb
+  name: %PEER_PREFIX%%NUM%-%ORG%-nlb
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
 spec:
@@ -25,7 +25,7 @@ spec:
    app: hyperledger
    role: peer
    org: %ORG%
-   name: peer%NUM%-%ORG%
+   name: %PEER_PREFIX%%NUM%-%ORG%
  ports:
    - name: endpoint
      protocol: TCP

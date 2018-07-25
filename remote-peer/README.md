@@ -81,7 +81,7 @@ Copy the certificate and key information from the main Kubernetes cluster, as fo
 `scp -i /Users/edgema/Documents/apps/eks/eks-fabric-key-account1.pem /Users/edgema/Documents/apps/fabric-on-eks/opt.tar  ec2-user@ec2-34-228-23-44.compute-1.amazonaws.com:/home/ec2-user/opt.tar`
 * SSH into the EC2 instance you created in the new AWS account
 * `cd /`
-* `rm -rf /opt/share`
+* `sudo rm -rf /opt/share`
 * `tar xvf ~/opt.tar` - this should extract all the crypto material onto the EFS drive, at /opt/share
 
 A couple of configuration steps are required before starting the new peer:

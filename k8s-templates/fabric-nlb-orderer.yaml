@@ -26,7 +26,6 @@ spec:
    role: orderer
    org: %ORG%
    name: orderer%NUM%-%ORG%
- type: NodePort
  ports:
    - name: endpoint
      protocol: TCP
