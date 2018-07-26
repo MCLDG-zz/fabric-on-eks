@@ -490,6 +490,25 @@ function startKafka {
 }
 
 # This function is only called if: $FABRIC_NETWORK_TYPE == "PROD"
+# This function creates AWS Network Load Balancers to expose the orderer service nodes. This is needed for a couple of
+# reasons:
+# 1) there are peer nodes running in other AWS Accounts, or even outside of AWS, that need to connect to the orderer
+# 2) there are client applications (such as the Marbles application we use in the workshop) that need to connect
+# to the orderer
+#
+# What we do here is create one or more NLBs. For a PROD network, I default to creating 3 orderer service nodes
+# as follows:
+# 1) for peers connecting to the orderer locally, from within the same K8s cluster. No NLB is required for OSN #1
+# 2) for peers connecting to the orderer remotely, via TLS. An NLB is required that handles TLS traffic
+# 3) for client applications connecting to the orderer remotely, without TLS. An NLB is required that handles
+# non-TLS traffic.
+#
+# I therefore create NLBs only for scenarios 2 & 3 above. In addition, only scenario 2 needs to have the orderer
+# endpoint encoded in configtx.yaml. This is because the peer will call the orderer endpoint based on the endpoint
+# encoded in the channel config, and the channel config is created from the config in configtx.yaml
+#
+# In Scenario 3, the client application is provided an endpoint via the Fabric Connection Profile. It does not read the
+# endpoint from the channel config.
 function startOrdererNLB {
     if [ $# -ne 2 ]; then
         echo "Usage: startOrdererNLB <home-dir> <repo-name>"
@@ -499,9 +518,13 @@ function startOrdererNLB {
     local REPO=$2
     cd $HOME
     echo "Starting Network Load Balancer service for Orderer"
+    # Do not create an NLB for the first orderer, but do create one for all others
     for ORG in $ORDERER_ORGS; do
       local COUNT=1
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
+        if [ $COUNT -eq 1 ]; then
+            continue
+        fi
         kubectl apply -f $REPO/k8s/fabric-nlb-orderer$COUNT-$ORG.yaml
         COUNT=$((COUNT+1))
       done
@@ -521,26 +544,35 @@ function startOrdererNLB {
             NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
-        EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}        - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
-        # Update the orderer deployment yaml with the orderer NLB DNS endpoint. This will allow remote connection from a peer
+        # Update the orderer deployment yaml with the orderer NLB DNS endpoint. This will allow remote connection from a peer,
+        # and is necessary to ensure the orderer generates a TLS cert with the correct endpoint address.
         # This is only done if: there is more than 1 orderer AND $FABRIC_NETWORK_TYPE == "PROD" (in fact, this function is only
         # called if we are setting up a PROD network)
+        if [ $COUNT -gt 1 ]; then
+            local ORDERERHOST=orderer${COUNT}-${ORG}.${DOMAIN}
+            echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-orderer${COUNT}-${ORG}.yaml"
+            sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
+        fi
         # Only the 2nd orderer is updated with the NLB endpoint. The 1st orderer retains a local orderer endpoint for connection
         # from local peers.
         if [ $COUNT -eq 2 ]; then
             local ORDERERHOST=orderer${COUNT}-${ORG}.${DOMAIN}
-            echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-orderer${COUNT}-${ORG}.yaml"
-            sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
-            #Store the NLB endpoint for the 2nd orderer
+            # Set the two ENV variables below in scripts/env.sh. These are used when setting the context for the
+            # orderer. We set the context in env.sh, in the function initOrdererVars. If we are setting the context
+            # for the 2nd orderer, we want to point the ORDERER_HOST ENV var to the NLB endpoint.
             echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${SCRIPTS}/env.sh"
             sed -e "s/EXTERNALORDERERHOSTNAME=\"\"/EXTERNALORDERERHOSTNAME=\"${NLBHOSTNAME}\"/g" -i $SCRIPTS/env.sh
             sed -e "s/EXTERNALORDERERPORT=\"\"/EXTERNALORDERERPORT=\"${NLBHOSTPORT}\"/g" -i $SCRIPTS/env.sh
+            # Store the NLB endpoint for the 2nd orderer. This NLB endpoint will find its way into configtx.yaml. See
+            # the code after the for-loop where scripts.env is updated. This ensures the NLB endpoint is in the
+            # genesis config block for the channel, and allows remote peers to connect to the orderer.
+            EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}        - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
         fi
         COUNT=$((COUNT+1))
       done
     done
-    #update env.sh with the Orderer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
-    # add the hostnames to configtx.yaml
+    # update env.sh with the Orderer NLB external hostname. This will be used in scripts/gen-channel-artifacts.sh, and
+    # add the hostnames to configtx.yaml. This should be the endpoint for the 2nd orderer.
     echo "Updating env.sh with Orderer NLB endpoints: ${EXTERNALORDERERADDRESSES}"
     sed -e "s/EXTERNAL_ORDERER_ADDRESSES=\"\"/EXTERNAL_ORDERER_ADDRESSES=\"${EXTERNALORDERERADDRESSES}\"/g" -i $SCRIPTS/env.sh
 }
@@ -679,6 +711,19 @@ function startTest {
     cd $HOME
     log "Starting Test Cases in K8s"
     kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
+    confirmDeployments
+}
+
+function startTestMarblesWorkshop {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startTestMarblesWorkshop <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Starting Test Cases for Marbles Workshop in K8s"
+    kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric-marbles-workshop.yaml
     confirmDeployments
 }
 

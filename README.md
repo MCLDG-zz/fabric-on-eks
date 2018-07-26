@@ -316,17 +316,18 @@ export CORE_PEER_ID=peer1-org3
 export CORE_PEER_ADDRESS=peer1-org3.org3:7051
 export CORE_PEER_LOCALMSPID=org3MSP
 
-export CORE_PEER_TLS_CLIENTCERT_FILE=/data/tls/michaelpeer1-org8-client.crt
-export CORE_PEER_TLS_CLIENTKEY_FILE=/data/tls/michaelpeer1-org8-client.key
-export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
-export CORE_PEER_TLS_CLIENTROOTCAS_FILES=/data/org8-ca-chain.pem
-export CORE_PEER_TLS_ROOTCERT_FILE=/data/org8-ca-chain.pem
+export CORE_PEER_TLS_CLIENTCERT_FILE=/data/tls/michaelpeer1-org1-client.crt
+export CORE_PEER_TLS_CLIENTKEY_FILE=/data/tls/michaelpeer1-org1-client.key
+export CORE_PEER_TLS_ENABLED=false
+export CORE_PEER_TLS_CLIENTAUTHREQUIRED=false
+export CORE_PEER_TLS_CLIENTROOTCAS_FILES=/data/org1-ca-chain.pem
+export CORE_PEER_TLS_ROOTCERT_FILE=/data/org1-ca-chain.pem
 export CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
-export CORE_PEER_ID=michaelpeer1-org8
-export CORE_PEER_ADDRESS=michaelpeer1-org8.org8:7051
-export CORE_PEER_LOCALMSPID=org8MSP
-export CORE_PEER_MSPCONFIGPATH=/data/orgs/org8/admin/msp
+export CORE_PEER_ID=michaelpeer1-org1
+export CORE_PEER_ADDRESS=michaelpeer1-org1.org1:7051
+export CORE_PEER_LOCALMSPID=org1MSP
+export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp
+export CORE_LOGGING_GRPC=DEBUG
 
 Set context to user:
 export CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/msp

@@ -255,8 +255,15 @@ function genOrderer {
         getDomain $ORG
         local COUNT=1
         while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
-            sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORT%/${ordererport}/g" ${K8STEMPLATES}/fabric-deployment-orderer.yaml > ${K8SYAML}/fabric-deployment-orderer$COUNT-$ORG.yaml
-            sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" ${K8STEMPLATES}/fabric-nlb-orderer.yaml > ${K8SYAML}/fabric-nlb-orderer$COUNT-$ORG.yaml
+            # for the 3rd orderer we generate an orderer with no TLS. Use for client applications connections
+            # during the workshop
+            if [ $COUNT -eq 3 ]; then
+                sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORT%/${ordererport}/g" ${K8STEMPLATES}/fabric-deployment-orderer-tls.yaml > ${K8SYAML}/fabric-deployment-orderer$COUNT-$ORG.yaml
+                sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" ${K8STEMPLATES}/fabric-nlb-orderer.yaml > ${K8SYAML}/fabric-nlb-orderer$COUNT-$ORG.yaml
+            else
+                sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORT%/${ordererport}/g" ${K8STEMPLATES}/fabric-deployment-orderer.yaml > ${K8SYAML}/fabric-deployment-orderer$COUNT-$ORG.yaml
+                sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" ${K8STEMPLATES}/fabric-nlb-orderer.yaml > ${K8SYAML}/fabric-nlb-orderer$COUNT-$ORG.yaml
+            fi
             COUNT=$((COUNT+1))
             ordererport=$((ordererport+1))
         done
@@ -323,6 +330,13 @@ function genFabricTestMarbles {
     getAdminOrg
     getDomain $ADMINORG
     sed -e "s/%ORG%/${ADMINORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-test-fabric-marbles.yaml > ${K8SYAML}/fabric-deployment-test-fabric-marbles.yaml
+}
+
+function genFabricTestMarblesWorkshop {
+    log "Generating Fabric Test Marbles Workshop K8s YAML files"
+    getAdminOrg
+    getDomain $ADMINORG
+    sed -e "s/%ORG%/${ADMINORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-deployment-test-fabric-marbles-workshop.yaml > ${K8SYAML}/fabric-deployment-test-fabric-marbles-workshop.yaml
 }
 
 function genInstallMarblesCC {

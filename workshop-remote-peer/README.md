@@ -19,8 +19,15 @@ Fabric peers as pods in Kubernetes. Once the peer is running the participants wi
 channel, install chaincode, test the channel connection, then run a Node.js application that connects to the peer 
 and displays its state in a colourful UI.
 
-## Workshop pre-requisites
+## Facilitator pre-requisites
+* Orderer connection URL and certs must be obtained and made available to all participants
+* S3 bucket must be populated with the 'tar' certs and keys, from /opt/share
+* Marbles chaincode is the version provided with the marbles app: https://github.com/IBM-Blockchain/marbles. Not the 
+version provided by fabric-samples (https://github.com/hyperledger/fabric-samples/blob/release-1.2/chaincode/marbles02/go/marbles_chaincode.go).
+To deploy this on the main Fabric cluster in the facilitators account, run the script `./start-workshop-marbles.sh`. This
+will instantiate the correct version of the marbles chaincode on the channel and run a short test against it.
 
+## Workshop pre-requisites
 You're going to interact with Fabric and the Kubernetes cluster from a bastion host that mounts an EFS drive. EFS is 
 required to store the crypto material used by Fabric, and you'll need to copy the appropriate certs/keys to/from the EFS drive.
 The pre-requisites are as follows:
@@ -28,12 +35,9 @@ The pre-requisites are as follows:
 * An AWS account where you can create a Kubernetes cluster (either your own Kubernetes cluster or EKS)
 * Check that you can access the crypto material for the Fabric network from the S3 bucket: <S3 BUCKET HERE>
 
-
-
-## Getting Started - common steps for POC & PROD options
-
+## Getting Started
 We create the Kubernetes cluster first. This has the advantage that we can deploy the EC2 bastion into the same VPC
-and mount EFS into the Kubernetes cluster. The disadvantage is configuring kubectl to connect to the Kubernetes
+and mount EFS into the Kubernetes cluster. The disadvantage is configuring kubectl on the EC2 bastion to connect to the Kubernetes
 cluster via the config in ~/.kube/config - see Step 3. It's a small price to pay, so we'll stick with this approach for now. 
  
 ### Step 1: Create a Kubernetes cluster
@@ -322,7 +326,7 @@ kubectl logs deploy/michaelpeer1-org1 -n org1 -c michaelpeer1-org1 | grep 'Start
 Your peer has started, but..... it's useless at this point. It hasn't joined any channels, it can't run chaincode
 and it does not maintain any ledger state. To start building a ledger on the peer we need to join a channel.
 
-### Join the peer to a channel
+### Step 10: Join the peer to a channel
 To give you a better understanding of Fabric, we are going to carry out the steps to join a peer to a channel manually.
 We need to carry out the steps from within a container running in the Kubernetes cluster. We'll use the 'register'
 container you started in step 8, as this runs the fabric-ca-tools image, which will provide us a CLI to interact
@@ -418,27 +422,35 @@ mychannel
 
 You should see that your peer has now joined the channel. 
 
-### Confirm peer has joined channel
+### Step 11: Confirm peer has joined channel
 To confirm the peer has joined the channel you'll need to check the peer logs. If there are existing blocks on the channel 
 you should see them replicating to the new peer. Look for messages in the log file such as `Channel [mychannel]: Committing block [14385] to storage`.
 
-### Install the marbles chaincode
+### Step 12: Install the marbles chaincode
 To install the marbles chaincode we'll first clone the chaincode repo to our 'register' container, then install the
 chaincode to the peer. 'exec' back in to the 'register' container and do the following:
 
 ```bash
 mkdir -p /opt/gopath/src/github.com/hyperledger
 cd /opt/gopath/src/github.com/hyperledger
-git clone https://github.com/hyperledger/fabric-samples.git
-cd fabric-samples
-git checkout release-1.1
+git clone https://github.com/IBM-Blockchain/marbles.git
+cd marbles
 mkdir /opt/gopath/src/github.com/hyperledger/fabric
 ```
 
 Now install the chaincode:
 
 ```bash
-peer chaincode install -n marblescc -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/marbles02/go
+peer chaincode install -n marbles-workshop -v 1.0 -p github.com/hyperledger/marbles/chaincode/src/marbles
+```
+
+The result should be:
+
+```bash
+# peer chaincode install -n marbles-workshop -v 1.0 -p github.com/hyperledger/marbles/chaincode/src/marbles
+2018-07-26 08:57:55.684 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 001 Using default escc
+2018-07-26 08:57:55.684 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 002 Using default vscc
+2018-07-26 08:57:55.823 UTC [main] main -> INFO 003 Exiting.....
 ```
 
 Check that it was installed. We also check if it was instantiated. It should be as it was instantiated by the facilitator
@@ -454,15 +466,14 @@ You should see the following:
 ```bash
 # peer chaincode list --installed
 Get installed chaincodes on peer:
-Name: mychannel, Version: 1.0, Path: github.com/hyperledger/fabric-samples/chaincode/marbles02/go, Id: 219f9e3d6123fe781238e4a4385020e078af09745a7109a7de7b25e48da1217e
-2018-07-26 05:19:56.461 UTC [main] main -> INFO 001 Exiting.....
+Name: marbles-workshop, Version: 1.0, Path: github.com/hyperledger/marbles/chaincode/src/marbles, Id: 7c07640a582822f8bb2364fa0ab0d204ba8b3d6b28f559027fcbdccfe65b3aae
+2018-07-26 08:58:31.780 UTC [main] main -> INFO 001 Exiting.....
 # peer chaincode list --instantiated -C mychannel
 Get instantiated chaincodes on channel mychannel:
-Name: marblescc, Version: 1.0, Escc: escc, Vscc: vscc
-2018-07-26 05:19:56.582 UTC [main] main -> INFO 001 Exiting.....
+2018-07-26 08:58:31.887 UTC [main] main -> INFO 001 Exiting.....
 ```
 
-### Creating a user
+### Step 13: Creating a user
 So far we have interacted with the peer node using the Admin user. This might not have been apparent, but the export 
 statements we used include the following line, 'export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp', which
 sets the MSP context to an admin user. Admin was used to join the channel and install the chaincode. But to invoke
@@ -531,7 +542,7 @@ as the following export statement will identity you as an admin:
 export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp
 ```
 
-### Invoke transactions in Fabric
+### Step 14: Invoke transactions in Fabric
 Let's run a query. In Fabric, a query will execute on the peer node and query the world state, which is the current
 state of the ledger. World state is stored in either a CouchDB or LevelDB key-value store. The query below will
 return the latest state for 'marble2'
@@ -548,8 +559,25 @@ Query Result: {"color":"red","docType":"marble","name":"marble2","owner":"edge",
 2018-07-26 05:39:16.308 UTC [main] main -> INFO 003 Exiting.....
 ```
 
-### Deploy Marbles
-Marbles requires connectivity to three Fabric components:
+Invoking a transaction is different to running a query. Whereas a query runs locally in your own peer, a transaction
+first runs locally, simulating the transaction against your local world state, then the results are sent to the 
+orderer. The orderer groups the transactions into blocks and distributes them to all peer nodes. All the peers
+then update their ledgers and world state with each transaction in the block.
+
+Since the transaction is sent to the orderer, you need to provide the orderer endpoint when invoking a transaction:
+
+```bash
+export ORDERER_CONN_ARGS="-o a61689643897211e8834f06b86f026a6-4a015d7a09a2998a.elb.us-west-2.amazonaws.com:7050"
+peer chaincode invoke -C mychannel -n marblescc -c '{"Args":["transferMarble","marble2","smith"]}' $ORDERER_CONN_ARGS
+peer chaincode query -C mychannel -n marblescc -c '{"Args":["readMarble","marble2"]}'
+```
+
+### Step 15: Connect an application to your Fabric peer
+We are going to connect the marbles client application to your peer node. This will provide you with a user interface
+you can use to interact with the Fabric network. It will also provide you visibility into what is happening in the
+network, and what activities are being carried out by the other workshop participants.
+
+The Marbles client application requires connectivity to three Fabric components:
 
 * Orderer: the Orderer was created by the facilitator before the workshop started. The facilitator will provide the endpoint
 * Peer: this is the peer you started in step 9. We will expose this using an NLB below (NLB because peers communicate using gRPC)
@@ -561,3 +589,41 @@ NOTE: Marbles running locally cannot connect to the ELB port 7054 if you are run
 stop the VPN before connecting.
 
 I also needed to 
+
+### Step 16: Using the marbles application
+In a browser, navigate to: http://localhost:3001/home. Before doing anything else, configure the UI:
+
+* Click 'Settings' and set Story Mode ON. This will show you what Fabric is doing behind the scenes when you create
+new marbles or transfer them.
+* Click the magnifying glass on the left, then click on a marble to see the transactions related to that marble. 
+
+Now go ahead and drag marbles from one owner to another, or create new marbles. Watch how the UI explains what is
+happening inside Fabric. 
+
+Add yourself as a new marble owner. Now, for some reason, the developers of the app created a chaincode function
+to do this, but did not include this function in the UI. So we'll do it the hard way.
+
+'exec' into the register container and enter the export statements you used in Step 10. Then identify yourself as
+a user:
+
+```bash
+export CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/orgs/org1/user/msp
+```
+
+Execute the chaincode to add yourself as a marble owner. Change the numbers below to some other random number (i.e. 
+o928734982374 and m928734982374), and change 'bob' to your alias (something unique). If you execute both invoke 
+statements immediately after each other, the second one will probably fail. Any idea why? If you watched what happens
+in Fabric when you transfer a marble, it will give you a strong hint.
+
+You may need to wait a few seconds between the invoke statements, and for your new owner to be reflected in the query.
+There is no issue with running these statements multiple times.
+
+```bash
+export ORDERER_CONN_ARGS="-o a61689643897211e8834f06b86f026a6-4a015d7a09a2998a.elb.us-west-2.amazonaws.com:7050"
+peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_owner","o928734982375","bob", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_marble","m928734982375", "blue", "35", "o928734982375", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode query -C mychannel -n marbles -c '{"Args":["read_everything"]}'
+```
+
+
+

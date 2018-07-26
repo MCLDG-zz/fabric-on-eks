@@ -15,10 +15,18 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+# There are various different versions of the Marbles chaincode, and some versions vary dramatically in terms of
+# their interface.
+#
+# This script installs, instantiates and tests the Marbles chaincode that comes with the Marbles client application,
+# found here: https://github.com/IBM-Blockchain/marbles/tree/master/chaincode/src/marbles
+#
+# This version should be installed if you want to run the workshop. See the README under workshop-remote-peer
+
 set +e
 
 source $(dirname "$0")/env.sh
-CHAINCODE_NAME=marblescc
+CHAINCODE_NAME=marbles-workshop
 
 function main {
 
@@ -28,7 +36,6 @@ function main {
 
    log "Test network using $CHAINCODE_NAME chaincode"
 
-   # Set ORDERER_PORT_ARGS to the args needed to communicate with the 1st orderer
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
    # if we are running this script in an account remote from the main orderer account, make sure we use the
    # NLB endpoint for the orderer. Otherwise, assume we are running in the same K8s cluster as the orderer and use the local endpoint.
@@ -96,6 +103,17 @@ function main {
    switchToUserIdentity
    chaincodeQuery
 
+   # Invoke chaincode
+   initPeerVars ${PORGS[0]} 1
+   switchToUserIdentity
+   transferMarbleAgain
+
+   # Query chaincode
+   sleep 10
+   initPeerVars ${PORGS[0]} 1
+   switchToUserIdentity
+   chaincodeQuery
+
    log "Congratulations! $CHAINCODE_NAME chaincode tests ran successfully."
 
    done=true
@@ -103,16 +121,12 @@ function main {
 
 # git clone fabric-samples. We need this repo for the chaincode
 function cloneFabricSamples {
-   log "cloneFabricSamples"
+   log "clone Marbles app: https://github.com/IBM-Blockchain/marbles.git"
    mkdir -p /opt/gopath/src/github.com/hyperledger
    cd /opt/gopath/src/github.com/hyperledger
-   git clone https://github.com/hyperledger/fabric-samples.git
-   log "cloned FabricSamples"
-   cd fabric-samples
-   git checkout release-1.1
-   log "checked out version 1.1 of FabricSamples"
-
-   log "cloneFabric"
+   git clone https://github.com/IBM-Blockchain/marbles.git
+   log "cloned Marbles app"
+   cd marbles
    mkdir /opt/gopath/src/github.com/hyperledger/fabric
 }
 
@@ -157,7 +171,7 @@ function updateAnchorPeers {
 function installChaincode {
    switchToAdminIdentity
    log "Installing chaincode on $PEER_NAME ..."
-   peer chaincode install -n $CHAINCODE_NAME -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/marbles02/go
+   peer chaincode install -n $CHAINCODE_NAME -v 1.0 -p github.com/hyperledger/marbles/chaincode/src/marbles
 }
 
 function instantiateChaincode {
@@ -168,16 +182,14 @@ function instantiateChaincode {
 
 function chaincodeInit {
    log "Initialising marbles on $PEER_NAME ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["initMarble","marble1","blue","21","edge"]}' $ORDERER_CONN_ARGS
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["initMarble","marble2","red","27","braendle"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999999", "blue", "50", "edge", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999998", "red", "35", "braendle", "United Marbles"]}' $ORDERER_CONN_ARGS
 }
 
 function chaincodeQuery {
    set +e
    log "Querying marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
-   peer chaincode query -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["readMarble","marble1"]}' >& log.txt
-   cat log.txt
-   peer chaincode query -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["readMarble","marble2"]}' >& log.txt
+   peer chaincode query -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["read_everything"]}' >& log.txt
    cat log.txt
    log "Successfully queried marbles chaincode in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
@@ -185,7 +197,14 @@ function chaincodeQuery {
 function transferMarble {
    set +e
    log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["transferMarble","marble2","edge"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["set_owner","m999999999998","edge", "United Marbles"]}' $ORDERER_CONN_ARGS
+   log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
+}
+
+function transferMarbleAgain {
+   set +e
+   log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["set_owner","m999999999998","braendle", "United Marbles"]}' $ORDERER_CONN_ARGS
    log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
 

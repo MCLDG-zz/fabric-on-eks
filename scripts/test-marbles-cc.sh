@@ -29,7 +29,13 @@ function main {
 
    # Set ORDERER_PORT_ARGS to the args needed to communicate with the 1st orderer
    IFS=', ' read -r -a OORGS <<< "$ORDERER_ORGS"
-   initOrdererVars ${OORGS[0]} 1
+   # if we are running this script in an account remote from the main orderer account, make sure we use the
+   # NLB endpoint for the orderer. Otherwise, assume we are running in the same K8s cluster as the orderer and use the local endpoint.
+   if [[ -v $"REMOTE_PEER" ]]; then
+       initOrdererVars ${OORGS[0]} 2
+   else
+       initOrdererVars ${OORGS[0]} 1
+   fi
    export ORDERER_PORT_ARGS="-o $ORDERER_HOST:$ORDERER_PORT --tls --cafile $CA_CHAINFILE --clientauth"
 #   export ORDERER_PORT_ARGS="-o $ORDERER_HOST:7050 --cafile $CA_CHAINFILE"
 

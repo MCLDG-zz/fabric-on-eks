@@ -58,8 +58,11 @@ DOMAINS="$ORDERER_DOMAINS $PEER_DOMAINS"
 # Set to true to populate the "admincerts" folder of MSPs
 ADMINCERTS=true
 
-# Number of Orderer nodes
-NUM_ORDERERS=2
+# Number of Orderer nodes. We generate 3 orderers as follows:
+# 1) for peers connecting to the orderer locally, from within the same K8s cluster. No NLB is required for OSN #1
+# 2) for peers connecting to the orderer remotely, via TLS. An NLB is required that handles TLS traffic
+# 3) for client applications connecting to the orderer remotely, without TLS. An NLB is required that handles
+NUM_ORDERERS=3
 
 # The volume mount to share data between containers
 DATA=data
