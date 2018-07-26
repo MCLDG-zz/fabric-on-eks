@@ -321,18 +321,232 @@ kubectl logs deploy/michaelpeer1-org1 -n org1 -c michaelpeer1-org1 | grep 'Start
 
 Your peer has started, but..... it's useless at this point. It hasn't joined any channels, it can't run chaincode
 and it does not maintain any ledger state. To start building a ledger on the peer we need to join a channel.
+
 ### Join the peer to a channel
-I've created a Kubernetes deployment YAML that will deploy a POD to execute a script, `test-fabric-marbles`, that will
-join the peer created above to a channel (the channel name is in env.sh), install the marbles demo chaincode, and 
-execute a couple of test transactions. Run the following:
+To give you a better understanding of Fabric, we are going to carry out the steps to join a peer to a channel manually.
+We need to carry out the steps from within a container running in the Kubernetes cluster. We'll use the 'register'
+container you started in step 8, as this runs the fabric-ca-tools image, which will provide us a CLI to interact
+with the peer. You can confirm this by:
 
 ```bash
-kubectl apply -f k8s/fabric-deployment-test-fabric-marbles.yaml
+kubectl get po -n org1
 ```
 
-This will connect the new peer to the channel. You should then check the peer logs to ensure
-all the TX are being sent to the new peer. If there are existing blocks on the channel you should see them
-replicating to the new peer. Look for messages in the log file such as `Channel [mychannel]: Committing block [14385] to storage`.
+Then describe the pod using the pod name (replace the pod name below with your own):
+
+```bash
+kubectl describe po register-p-org1-66bd5688b4-rrpw6 -n org1
+```
+
+Look at the Image Id attribute.
+
+OK, so let's 'exec' into the register container (replace the pod name below with your own):
+
+```bash
+kubectl exec -it register-p-org1-66bd5688b4-rrpw6 -n org1 bash
+```
+
+Now that you are inside the container, type the following:
+
+```bash
+peer
+```
+
+This will show you the help message for the Fabric 'peer' CLI. We'll use this to join a channel, install chaincode
+and invoke transactions.
+
+Firstly, we need to join a channel. To join a channel you'll need to be an admin user, and you'll need access to the 
+channel genesis block. The channel genesis block is stored on the EFS drive, and you can see it by typing:
+
+```bash
+ls -l /data
+```
+
+Look for the file titled mychannel.block.
+
+Interacting with peers using the 'peer' utility requires you to set ENV variables that provide context to the 'peer' utility.
+We'll use the following ENV variables to indicate which peer we want to interact with. You'll need to make the following changes:
+
+* Change 'michaelpeer1' to match the name of your peer
+* Change 'org1' to the name of the org you belong to. Change it everywhere it appears
+
+You should still be inside the register container at this point. Copy all the variables below, and paste them into your 
+terminal window.
+
+```bash
+export CORE_PEER_TLS_ENABLED=false
+export CORE_PEER_TLS_CLIENTAUTHREQUIRED=false
+export CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+export CORE_PEER_ID=michaelpeer1-org1
+export CORE_PEER_ADDRESS=michaelpeer1-org1.org1:7051
+export CORE_PEER_LOCALMSPID=org1MSP
+export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp
+```
+
+Let's check to see whether we have joined any channels:
+
+```bash
+peer channel list
+```
+
+You should see the following: 
+
+```bash
+# peer channel list
+2018-07-26 03:40:45.128 UTC [channelCmd] InitCmdFactory -> INFO 001 Endorser and orderer connections initialized
+Channels peers has joined:
+2018-07-26 03:40:45.133 UTC [main] main -> INFO 002 Exiting.....
+```
+
+Now let's join a channel:
+
+```bash
+peer channel join -b /data/mychannel.block
+```
+
+```bash
+# peer channel join -b /data/mychannel.block
+2018-07-26 03:42:26.352 UTC [channelCmd] InitCmdFactory -> INFO 001 Endorser and orderer connections initialized
+2018-07-26 03:42:26.493 UTC [channelCmd] executeJoin -> INFO 002 Successfully submitted proposal to join channel
+2018-07-26 03:42:26.493 UTC [main] main -> INFO 003 Exiting.....
+# peer channel list
+2018-07-26 03:42:30.940 UTC [channelCmd] InitCmdFactory -> INFO 001 Endorser and orderer connections initialized
+Channels peers has joined:
+mychannel
+2018-07-26 03:42:30.944 UTC [main] main -> INFO 002 Exiting.....
+```
+
+You should see that your peer has now joined the channel. 
+
+### Confirm peer has joined channel
+To confirm the peer has joined the channel you'll need to check the peer logs. If there are existing blocks on the channel 
+you should see them replicating to the new peer. Look for messages in the log file such as `Channel [mychannel]: Committing block [14385] to storage`.
+
+### Install the marbles chaincode
+To install the marbles chaincode we'll first clone the chaincode repo to our 'register' container, then install the
+chaincode to the peer. 'exec' back in to the 'register' container and do the following:
+
+```bash
+mkdir -p /opt/gopath/src/github.com/hyperledger
+cd /opt/gopath/src/github.com/hyperledger
+git clone https://github.com/hyperledger/fabric-samples.git
+cd fabric-samples
+git checkout release-1.1
+mkdir /opt/gopath/src/github.com/hyperledger/fabric
+```
+
+Now install the chaincode:
+
+```bash
+peer chaincode install -n marblescc -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/marbles02/go
+```
+
+Check that it was installed. We also check if it was instantiated. It should be as it was instantiated by the facilitator
+when the channel was setup:
+
+```bash
+peer chaincode list --installed
+peer chaincode list --instantiated -C mychannel
+```
+
+You should see the following:
+
+```bash
+# peer chaincode list --installed
+Get installed chaincodes on peer:
+Name: mychannel, Version: 1.0, Path: github.com/hyperledger/fabric-samples/chaincode/marbles02/go, Id: 219f9e3d6123fe781238e4a4385020e078af09745a7109a7de7b25e48da1217e
+2018-07-26 05:19:56.461 UTC [main] main -> INFO 001 Exiting.....
+# peer chaincode list --instantiated -C mychannel
+Get instantiated chaincodes on channel mychannel:
+Name: marblescc, Version: 1.0, Escc: escc, Vscc: vscc
+2018-07-26 05:19:56.582 UTC [main] main -> INFO 001 Exiting.....
+```
+
+### Creating a user
+So far we have interacted with the peer node using the Admin user. This might not have been apparent, but the export 
+statements we used include the following line, 'export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp', which
+sets the MSP context to an admin user. Admin was used to join the channel and install the chaincode. But to invoke
+transactions we need a user. Users are created by fabric-ca, another tool provided for us by Fabric to act as a root CA
+and manage the registration and enrollment of identities.
+
+Once again, 'exec' into the register container. Replace 'org1' in the statements below to match the org you have chosen, 
+and execute the statements.
+```bash
+export FABRIC_CA_CLIENT_HOME=/etc/hyperledger/fabric/orgs/org1/user
+export CORE_PEER_MSPCONFIGPATH=$FABRIC_CA_CLIENT_HOME/msp
+export FABRIC_CA_CLIENT_TLS_CERTFILES=/data/org1-ca-chain.pem
+fabric-ca-client enroll -d -u https://user-org1:user-org1pw@ica-org1.org1:7054
+```
+
+You'll see a lengthy response that looks similar to this. Make sure you receive a 'statusCode=201' to indicate you user
+was created successfully:
+
+```bash
+# fabric-ca-client enroll -d -u https://user-org1:user-org1pw@ica-org1.org1:7054
+2018/07/26 05:05:34 [DEBUG] Home directory: /etc/hyperledger/fabric/orgs/org1/user
+2018/07/26 05:05:34 [INFO] Created a default configuration file at /etc/hyperledger/fabric/orgs/org1/user/fabric-ca-client-config.yaml
+2018/07/26 05:05:34 [DEBUG] Client configuration settings: &{URL:https://user-org1:user-org1pw@ica-org1.org1:7054 MSPDir:msp TLS:{Enabled:true CertFiles:[/data/org1-ca-chain.pem] Client:{KeyFile: CertFile:}} Enrollment:{ Name: Secret:**** Profile: Label: CSR:<nil> CAName: AttrReqs:[]  } CSR:{CN:user-org1 Names:[{C:US ST:North Carolina L: O:Hyperledger OU:Fabric SerialNumber:}] Hosts:[register-p-org1-66bd5688b4-rrpw6] KeyRequest:<nil> CA:<nil> SerialNumber:} ID:{Name: Type:client Secret: MaxEnrollments:0 Affiliation: Attributes:[] CAName:} Revoke:{Name: Serial: AKI: Reason: CAName: GenCRL:false} CAInfo:{CAName:} CAName: CSP:0xc4201ccba0}
+2018/07/26 05:05:34 [DEBUG] Entered runEnroll
+2018/07/26 05:05:34 [DEBUG] Enrolling { Name:user-org1 Secret:**** Profile: Label: CSR:&{user-org1 [{US North Carolina  Hyperledger Fabric }] [register-p-org1-66bd5688b4-rrpw6] <nil> <nil> } CAName: AttrReqs:[]  }
+2018/07/26 05:05:34 [DEBUG] Initializing client with config: &{URL:https://ica-org1.org1:7054 MSPDir:msp TLS:{Enabled:true CertFiles:[/data/org1-ca-chain.pem] Client:{KeyFile: CertFile:}} Enrollment:{ Name:user-org1 Secret:**** Profile: Label: CSR:&{user-org1 [{US North Carolina  Hyperledger Fabric }] [register-p-org1-66bd5688b4-rrpw6] <nil> <nil> } CAName: AttrReqs:[]  } CSR:{CN:user-org1 Names:[{C:US ST:North Carolina L: O:Hyperledger OU:Fabric SerialNumber:}] Hosts:[register-p-org1-66bd5688b4-rrpw6] KeyRequest:<nil> CA:<nil> SerialNumber:} ID:{Name: Type:client Secret: MaxEnrollments:0 Affiliation: Attributes:[] CAName:} Revoke:{Name: Serial: AKI: Reason: CAName: GenCRL:false} CAInfo:{CAName:} CAName: CSP:0xc4201ccba0}
+2018/07/26 05:05:34 [DEBUG] Initializing BCCSP: &{ProviderName:SW SwOpts:0xc4201ccc00 PluginOpts:<nil> Pkcs11Opts:<nil>}
+2018/07/26 05:05:34 [DEBUG] Initializing BCCSP with software options &{SecLevel:256 HashFamily:SHA2 Ephemeral:false FileKeystore:0xc4201e07e0 DummyKeystore:<nil>}
+2018/07/26 05:05:34 [INFO] TLS Enabled
+2018/07/26 05:05:34 [DEBUG] CA Files: [/data/org1-ca-chain.pem]
+2018/07/26 05:05:34 [DEBUG] Client Cert File:
+2018/07/26 05:05:34 [DEBUG] Client Key File:
+2018/07/26 05:05:34 [DEBUG] Client TLS certificate and/or key file not provided
+2018/07/26 05:05:34 [DEBUG] GenCSR &{CN:user-org1 Names:[{C:US ST:North Carolina L: O:Hyperledger OU:Fabric SerialNumber:}] Hosts:[register-p-org1-66bd5688b4-rrpw6] KeyRequest:<nil> CA:<nil> SerialNumber:}
+2018/07/26 05:05:34 [INFO] generating key: &{A:ecdsa S:256}
+2018/07/26 05:05:34 [DEBUG] generate key from request: algo=ecdsa, size=256
+2018/07/26 05:05:34 [INFO] encoded CSR
+2018/07/26 05:05:34 [DEBUG] Sending request
+POST https://ica-org1.org1:7054/enroll
+{"hosts":["register-p-org1-66bd5688b4-rrpw6"],"certificate_request":"-----BEGIN CERTIFICATE REQUEST-----\nMIIBWzCCAQECAQAwYTELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9s\naW5hMRQwEgYDVQQKEwtIeXBlcmxlZGdlcjEPMA0GA1UECxMGRmFicmljMRIwEAYD\nVQQDEwl1c2VyLW9yZzEwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQ52A9ctKjd\n9+qQJUYlxTStSSbhY4nRWbUORUK7p5GIuesXgn79zU/YMST4BX9z6SOI97Y//cVf\nzLkq/4o5XAdIoD4wPAYJKoZIhvcNAQkOMS8wLTArBgNVHREEJDAigiByZWdpc3Rl\nci1wLW9yZzEtNjZiZDU2ODhiNC1ycnB3NjAKBggqhkjOPQQDAgNIADBFAiEA68Az\nRQcnmoKfglSrfgcRphudltiMXQlksBh3suDP25QCIGhX65Oi6X7z5RUINkurwtQs\nhWL4Igew+5UL0i2g1AyP\n-----END CERTIFICATE REQUEST-----\n","profile":"","crl_override":"","label":"","NotBefore":"0001-01-01T00:00:00Z","NotAfter":"0001-01-01T00:00:00Z","CAName":""}
+2018/07/26 05:05:35 [DEBUG] Received response
+statusCode=201 (201 Created)
+2018/07/26 05:05:35 [DEBUG] Response body result: map[Cert:LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUN4ekNDQW0yZ0F3SUJBZ0lVUlpoZFQzOFpLUDhRcVlBRFk0S2ZFeEptSXRrd0NnWUlLb1pJemowRUF3SXcKWmpFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1kyeHBaVzUwTVJjd0ZRWURWUVFERXc1eVkyRXRiM0puCk1TMWhaRzFwYmpBZUZ3MHhPREEzTWpZd05UQXhNREJhRncweE9UQTNNall3TlRBMk1EQmFNRzR4Q3pBSkJnTlYKQkFZVEFsVlRNUmN3RlFZRFZRUUlFdzVPYjNKMGFDQkRZWEp2YkdsdVlURVVNQklHQTFVRUNoTUxTSGx3WlhKcwpaV1JuWlhJeEhEQU5CZ05WQkFzVEJtTnNhV1Z1ZERBTEJnTlZCQXNUQkc5eVp6RXhFakFRQmdOVkJBTVRDWFZ6ClpYSXRiM0puTVRCWk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkRuWUQxeTBxTjMzNnBBbFJpWEYKTksxSkp1RmppZEZadFE1RlFydW5rWWk1NnhlQ2Z2M05UOWd4SlBnRmYzUHBJNGozdGovOXhWL011U3IvaWpsYwpCMGlqZ2ZBd2dlMHdEZ1lEVlIwUEFRSC9CQVFEQWdlQU1Bd0dBMVVkRXdFQi93UUNNQUF3SFFZRFZSME9CQllFCkZIaUNGNlJxS3pEbVBDVDZ5b1JxV29oNndCanJNQjhHQTFVZEl3UVlNQmFBRkJRS1dzRVhJeEp1MWdHQ1hrWUgKMlF1KzBGVUVNQ3NHQTFVZEVRUWtNQ0tDSUhKbFoybHpkR1Z5TFhBdGIzSm5NUzAyTm1Ka05UWTRPR0kwTFhKeQpjSGMyTUdBR0NDb0RCQVVHQndnQkJGUjdJbUYwZEhKeklqcDdJbWhtTGtGbVptbHNhV0YwYVc5dUlqb2liM0puCk1TSXNJbWhtTGtWdWNtOXNiRzFsYm5SSlJDSTZJblZ6WlhJdGIzSm5NU0lzSW1obUxsUjVjR1VpT2lKamJHbGwKYm5RaWZYMHdDZ1lJS29aSXpqMEVBd0lEU0FBd1JRSWhBTGJTRXYrT281SGNQaUMxMmM4cE5Oa1lmNTc5Y2s5eQpnZ1hsNUhWYmYyRUpBaUIrdURFZkhNT3JYY0VhK0htMXFTZS93TkZQL05NaitVSmlrc3BKbWE5WHNnPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo= ServerInfo:map[CAName:ica-org1.org1 CAChain:LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNNakNDQWRtZ0F3SUJBZ0lVY0w4V2N6dWcxUEVwbWQrZVpEeThhQ1NhWEVRd0NnWUlLb1pJemowRUF3SXcKWlRFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puCk1TNXZjbWN4TUI0WERURTRNRGN4TnpBek16QXdNRm9YRFRJek1EY3hOakF6TXpVd01Gb3daakVMTUFrR0ExVUUKQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRS0V3dEllWEJsY214bApaR2RsY2pFUE1BMEdBMVVFQ3hNR1kyeHBaVzUwTVJjd0ZRWURWUVFERXc1eVkyRXRiM0puTVMxaFpHMXBiakJaCk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQlBoV0kzVEZjbGlsMjU3aE9SOFNDVi9obE9DK0hQZFgKRXd1NEhxZ2RjTUxJM0N5b0RxMG14SWJxTUZYWkY5blo3dUdZaWV6Mmg5ekF5YjYxVkd5bWYzNmpaakJrTUE0RwpBMVVkRHdFQi93UUVBd0lCQmpBU0JnTlZIUk1CQWY4RUNEQUdBUUgvQWdFQU1CMEdBMVVkRGdRV0JCUVVDbHJCCkZ5TVNidFlCZ2w1R0I5a0x2dEJWQkRBZkJnTlZIU01FR0RBV2dCUVNHVzJtNG9iZnhTcXpvYXEvZWhQY3FDemkKNERBS0JnZ3Foa2pPUFFRREFnTkhBREJFQWlCRlJxTXczdi9DZmI0UmpndWVjbWh6OEhUNzZad0REdmNZazFPMwpFay9FalFJZ2FBWG9Ld0EvejdGeEJaSmJ2akFTVHV2VHlwN3RGam1JVFJlUlkxUUdZclk9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNFVENDQWJlZ0F3SUJBZ0lVU2JIcWNjYndmZDhkdEJZajdKRldjWUNZOXdFd0NnWUlLb1pJemowRUF3SXcKWlRFTE1Ba0dBMVVFQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRSwpFd3RJZVhCbGNteGxaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puCk1TNXZjbWN4TUI0WERURTRNRGN4TnpBek16QXdNRm9YRFRNek1EY3hNekF6TXpBd01Gb3daVEVMTUFrR0ExVUUKQmhNQ1ZWTXhGekFWQmdOVkJBZ1REazV2Y25Sb0lFTmhjbTlzYVc1aE1SUXdFZ1lEVlFRS0V3dEllWEJsY214bApaR2RsY2pFUE1BMEdBMVVFQ3hNR1JtRmljbWxqTVJZd0ZBWURWUVFERXcxeVkyRXRiM0puTVM1dmNtY3hNRmt3CkV3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFZ2phM1R1a0w0QWE2QWU5Zjk0b0c1S0dNcXJmZGErRkwKNW45N1dJYlE3QVJjN0dwRWNnVVNoWjNZQ1JDdDQxd01LVUFscnNDVVlwWU1jaS9zZlNmM1NxTkZNRU13RGdZRApWUjBQQVFIL0JBUURBZ0VHTUJJR0ExVWRFd0VCL3dRSU1BWUJBZjhDQVFFd0hRWURWUjBPQkJZRUZCSVpiYWJpCmh0L0ZLck9ocXI5NkU5eW9MT0xnTUFvR0NDcUdTTTQ5QkFNQ0EwZ0FNRVVDSVFEVDZMNWxyMmwxdHRRb0V4NWYKbklzUzZMcUN3bGV4UEc4NGVYSlZPTGRWZ3dJZ1F6cld2eHdJcDRrQ2tyVTI0SmRuZnRyUEVsMWRUSTVRTzQ0VApYVy9ZWjM0PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg== Version:]]
+2018/07/26 05:05:35 [DEBUG] newEnrollmentResponse user-org1
+2018/07/26 05:05:35 [INFO] Stored client certificate at /etc/hyperledger/fabric/orgs/org1/user/msp/signcerts/cert.pem
+2018/07/26 05:05:35 [INFO] Stored root CA certificate at /etc/hyperledger/fabric/orgs/org1/user/msp/cacerts/ica-org1-org1-7054.pem
+2018/07/26 05:05:35 [INFO] Stored intermediate CA certificates at /etc/hyperledger/fabric/orgs/org1/user/msp/intermediatecerts/ica-org1-org1-7054.pem
+```
+
+Some final copying of certs is required:
+
+```bash
+mkdir /etc/hyperledger/fabric/orgs/org1/user/msp/admincerts
+cp /data/orgs/org1/admin/msp/signcerts/* /etc/hyperledger/fabric/orgs/org1/user/msp/admincerts
+```
+
+From now on, the following export statement will identify you as a user:
+
+```bash
+export CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/orgs/org1/user/msp
+```
+
+as the following export statement will identity you as an admin:
+
+```bash
+export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp
+```
+
+### Invoke transactions in Fabric
+Let's run a query. In Fabric, a query will execute on the peer node and query the world state, which is the current
+state of the ledger. World state is stored in either a CouchDB or LevelDB key-value store. The query below will
+return the latest state for 'marble2'
+
+```bash
+peer chaincode query -C mychannel -n marblescc -c '{"Args":["readMarble","marble2"]}'
+```
+
+```bash
+# peer chaincode query -C mychannel -n marblescc -c '{"Args":["readMarble","marble2"]}'
+2018-07-26 05:39:16.129 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 001 Using default escc
+2018-07-26 05:39:16.129 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 002 Using default vscc
+Query Result: {"color":"red","docType":"marble","name":"marble2","owner":"edge","size":27}
+2018-07-26 05:39:16.308 UTC [main] main -> INFO 003 Exiting.....
+```
 
 ### Deploy Marbles
 Marbles requires connectivity to three Fabric components:
