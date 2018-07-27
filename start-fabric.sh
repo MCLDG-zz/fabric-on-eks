@@ -44,7 +44,7 @@ function main {
     updateChannelArtifacts $HOME $REPO
     startOrderer $HOME $REPO
     startPeers $HOME $REPO
-    startTest $HOME $REPO
+#    startTest $HOME $REPO
     whatsRunning
     echo "Setup of Hyperledger Fabric on Kubernetes complete"
 }
