@@ -522,10 +522,9 @@ function startOrdererNLB {
     for ORG in $ORDERER_ORGS; do
       local COUNT=1
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
-        if [ $COUNT -eq 1 ]; then
-            continue
+        if [ $COUNT -gt 1 ]; then
+            kubectl apply -f $REPO/k8s/fabric-nlb-orderer$COUNT-$ORG.yaml
         fi
-        kubectl apply -f $REPO/k8s/fabric-nlb-orderer$COUNT-$ORG.yaml
         COUNT=$((COUNT+1))
       done
     done
