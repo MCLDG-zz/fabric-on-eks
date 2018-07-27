@@ -93,6 +93,7 @@ function main {
     genInstallCCAddOrg
     genUpgradeCCAddOrg
     genTestCCAddOrg
+    genFabricTestMarblesWorkshop
     genDeleteOrg
     log "Creation of Hyperledger Fabric Kubernetes YAML files complete"
 }
