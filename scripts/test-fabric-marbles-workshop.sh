@@ -182,6 +182,8 @@ function instantiateChaincode {
 
 function chaincodeInit {
    log "Initialising marbles on $PEER_NAME ..."
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_owner","edge","edge", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_owner","braendle","braendle", "United Marbles"]}' $ORDERER_CONN_ARGS
    peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999999", "blue", "50", "edge", "United Marbles"]}' $ORDERER_CONN_ARGS
    peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999998", "red", "35", "braendle", "United Marbles"]}' $ORDERER_CONN_ARGS
 }
