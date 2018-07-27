@@ -20,7 +20,7 @@ function main {
     cd $HOME
     set +e
     for DELETE_ORG in $ORGS; do
-        stopPeers $HOME $REPO $DELETE_ORG
+        stopRemotePeers $HOME $REPO $DELETE_ORG
         stopRegisterPeers $HOME $REPO $DELETE_ORG
         stopICA $HOME $REPO $DELETE_ORG
         stopRCA $HOME $REPO $DELETE_ORG
@@ -33,11 +33,10 @@ function main {
     log "Remote Hyperledger Fabric on Kubernetes stopped"
 }
 
-SDIR=$(dirname "$0")
 DATA=/opt/share/
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
-source $SDIR/utilities.sh
+source $HOME/$REPO/utilities.sh
 DATA=/opt/share/
 REPO=fabric-on-eks
 main
