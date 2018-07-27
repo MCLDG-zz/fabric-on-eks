@@ -727,6 +727,19 @@ function startTestMarblesWorkshop {
     confirmDeployments
 }
 
+function stopTestMarblesWorkshop {
+    if [ $# -ne 2 ]; then
+        echo "Usage: stopTestMarblesWorkshop <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Stopping Test Cases for Marbles Workshop in K8s"
+    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles-workshop.yaml
+    confirmDeploymentsStopped test-fabric-marbles-workshop
+}
+
 function getAdminOrg {
     peerorgs=($PEER_ORGS)
     ADMINORG=${peerorgs[0]}

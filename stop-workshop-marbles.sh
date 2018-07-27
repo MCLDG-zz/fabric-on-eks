@@ -18,15 +18,15 @@
 set -e
 
 function main {
-    echo "Beginning setup of Marbles chaincode for the Fabric workshop ..."
+    echo "Stopping Marbles chaincode for the Fabric workshop ..."
     cd $HOME/$REPO
     source util-prep.sh
     source $SCRIPTS/env.sh
     cd $HOME/$REPO
     source utilities.sh
-    startTestMarblesWorkshop $HOME $REPO
+    stopTestMarblesWorkshop $HOME $REPO
     whatsRunning
-    echo "Setup of Marbles chaincode for the Fabric workshop complete"
+    echo "Stopping of Marbles chaincode for the Fabric workshop complete"
 }
 
 SDIR=$(dirname "$0")
