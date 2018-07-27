@@ -20,12 +20,19 @@ channel, install chaincode, test the channel connection, then run a Node.js appl
 and displays its state in a colourful UI.
 
 ## Facilitator pre-requisites
-* Orderer connection URL and certs must be obtained and made available to all participants
-* S3 bucket must be populated with the 'tar' certs and keys, from /opt/share
-* Marbles chaincode is the version provided with the marbles app: https://github.com/IBM-Blockchain/marbles. Not the 
+* In your own AWS account, you should be running a Kubernetes cluster with a Fabric network. You can start this network
+by running ./start-fabric.sh. See the main README for details
+* Before running ./start-fabric.sh, its advisable to edit ./start-fabric.sh and comment out the line 'startTest $HOME $REPO'.
+This will run test cases. We want to run our own test case, which also installs the Marbles chaincode used by the workshop
+* After ./start-fabric.sh completes and your Fabric network is running, install the chaincode. The Marbles chaincode used 
+in the workshop is the version provided with the marbles app: https://github.com/IBM-Blockchain/marbles. Not the 
 version provided by fabric-samples (https://github.com/hyperledger/fabric-samples/blob/release-1.2/chaincode/marbles02/go/marbles_chaincode.go).
 To deploy this on the main Fabric cluster in the facilitators account, run the script `./start-workshop-marbles.sh`. This
 will instantiate the correct version of the marbles chaincode on the channel and run a short test against it.
+* Orderer connection URL must be obtained and made available to all participants
+* S3 bucket must be populated with the 'tar' certs and keys, from /opt/share. This can be obtained by SSH'ing into your
+EC2 bastion instance and executing `sudo tar -cvf opt.tar /opt/share/`, to zip up the mounted EFS directory with all the certs and keys.
+Put the resulting .tar file into S3 so participants can download it.
 
 ## Workshop pre-requisites
 You're going to interact with Fabric and the Kubernetes cluster from a bastion host that mounts an EFS drive. EFS is 
