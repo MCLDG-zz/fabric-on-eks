@@ -34,9 +34,9 @@ function main {
 }
 
 DATA=/opt/share/
+REPO=fabric-on-eks
 SCRIPTS=$DATA/rca-scripts
 source $SCRIPTS/env.sh
 source $HOME/$REPO/utilities.sh
 DATA=/opt/share/
-REPO=fabric-on-eks
 main
