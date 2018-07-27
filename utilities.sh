@@ -529,10 +529,11 @@ function startOrdererNLB {
       done
     done
 
-    #wait for service to be created and hostname to be available. This could take a few seconds
+    #Wait for NLB service to be created and hostname to be available. This could take a few seconds
+    #Note the loop here starts from '2' - we ignore the first orderer as it does not use an NLB
     EXTERNALORDERERADDRESSES=''
     for ORG in $ORDERER_ORGS; do
-      local COUNT=1
+      local COUNT=2
       getDomain $ORG
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
         NLBHOSTNAME=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
