@@ -32,7 +32,10 @@ function main {
         cd $HOME
         sudo tar -cvf opt.tar /opt/share/
         aws s3api put-object --bucket $S3BucketName --key opt.tar --body opt.tar
+        aws s3api put-bucket-acl --bucket $S3BucketName --grant-read uri=http://acs.amazonaws.com/groups/global/AllUsers
         aws s3api put-object-acl --bucket $S3BucketName --key opt.tar --grant-read uri=http://acs.amazonaws.com/groups/global/AllUsers
+        aws s3api put-bucket-acl --bucket $S3BucketName --acl public-read
+        aws s3api put-object-acl --bucket $S3BucketName --key opt.tar --acl public-read
     else
         echo "AWS CLI is not configured on this node. If you want the script to automatically create the S3 bucket, install and configure the AWS CLI"
     fi

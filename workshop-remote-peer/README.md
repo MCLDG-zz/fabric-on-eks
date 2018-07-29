@@ -1,11 +1,7 @@
 # TODO
 
-* Cloudformation script to create an S3 bucket that can be accessed by all workshop participants. Used for the crypto 
-material, which will probably be a single S3 object .tar file.
 * Improve the section on creating the Kubernetes cluster, especially the section on how to use the Heptio authenticator
 and configure this for use on the bastion host
-* S3 command for downloading the Fabric crypto material in step 6
-
 
 # Hyperledger Fabric on Kubernetes
 
@@ -19,28 +15,12 @@ Fabric peers as pods in Kubernetes. Once the peer is running the participants wi
 channel, install chaincode, test the channel connection, then run a Node.js application that connects to the peer 
 and displays its state in a colourful UI.
 
-## Facilitator pre-requisites
-* In your own AWS account, you should be running a Kubernetes cluster with a Fabric network. You can start this network
-by running ./start-fabric.sh. See the main README for details
-* Before running ./start-fabric.sh, its advisable to edit ./start-fabric.sh and comment out the line 'startTest $HOME $REPO'.
-This will run test cases. We want to run our own test case, which also installs the Marbles chaincode used by the workshop
-* After ./start-fabric.sh completes and your Fabric network is running, install the chaincode. The Marbles chaincode used 
-in the workshop is the version provided with the marbles app: https://github.com/IBM-Blockchain/marbles. Not the 
-version provided by fabric-samples (https://github.com/hyperledger/fabric-samples/blob/release-1.2/chaincode/marbles02/go/marbles_chaincode.go).
-To deploy this on the main Fabric cluster in the facilitators account, run the script `./start-workshop-marbles.sh`. This
-will instantiate the correct version of the marbles chaincode on the channel and run a short test against it.
-* Orderer connection URL must be obtained and made available to all participants
-* S3 bucket must be populated with the 'tar' certs and keys, from /opt/share. This can be obtained by SSH'ing into your
-EC2 bastion instance and executing `sudo tar -cvf opt.tar /opt/share/`, to zip up the mounted EFS directory with all the certs and keys.
-Put the resulting .tar file into S3 so participants can download it.
-
 ## Workshop pre-requisites
 You're going to interact with Fabric and the Kubernetes cluster from a bastion host that mounts an EFS drive. EFS is 
 required to store the crypto material used by Fabric, and you'll need to copy the appropriate certs/keys to/from the EFS drive.
 The pre-requisites are as follows:
 
 * An AWS account where you can create a Kubernetes cluster (either your own Kubernetes cluster or EKS)
-* Check that you can access the crypto material for the Fabric network from the S3 bucket: <S3 BUCKET HERE>
 
 ## Getting Started
 We create the Kubernetes cluster first. This has the advantage that we can deploy the EC2 bastion into the same VPC
@@ -92,14 +72,15 @@ your Mac (or whichever device you used to create the Kubernetes cluster in Step 
 of ~/.kube/config, you could copy only the sections relevant to your new K8s cluster.
 
 To copy the kube config, do the following:
-* On your Mac, copy the contents of ~/.kube/config
+* On your laptop, copy the contents of ~/.kube/config
 * On the EC2 instance created above, do 
+
 ```bash
 mkdir /home/ec2-user/.kube
 cd /home/ec2-user/.kube
 vi config
 ```
-* hit the letter 'i' and paste the contents you copied from your Mac. Shift-zz to save and exit vi
+* hit the letter 'i' and paste the contents you copied from your Mac. Hit the escape key, then shift-zz to save and exit vi
 
 To check that this works execute:
 
@@ -151,7 +132,7 @@ vi gen-fabric.sh
 
 Look for the line starting with `EFSSERVER=`, and replace the URL with the one you copied from the EFS console. Using
 vi you can simply move the cursor over the first character after `EFSSERVER=` and hit the 'x' key until the existing
-URL is deleted. Then hit the 'i' key and ctrl-v to paste the new URL. Hit escale, then Shift-zz to save and exit vi. 
+URL is deleted. Then hit the 'i' key and ctrl-v to paste the new URL. Hit escape, then shift-zz to save and exit vi. 
 See, you're a vi expert already.
 
 ### Step 6: Get the Fabric crypto information
@@ -164,18 +145,22 @@ this information available in an S3 bucket - you just need to download it and co
 
 * SSH into the EC2 instance you created in Step 2
 * Download the crypto information:
+
 ```bash
 cd
-TBC - S3 get blah blah
+curl https://s3-us-west-2.amazonaws.com/mcdg-blockchain-workshop/opt.tar -o opt.tar
+ls -l
 ```
-* Extract the crypto material:
-* Extract the crypto material:
+
+* Extract the crypto material (you may need to use 'sudo'. Ignore the 'permission denied' error message, if you receive one):
+
 ```bash
 cd /
 rm -rf /opt/share
 tar xvf ~/opt.tar 
 ls -lR /opt/share
 ```
+
 You should see something like this (though this is only a subset):
 
 ```bash
@@ -211,6 +196,11 @@ file used by the scripts that configure Fabric.
 
 * SSH into the EC2 instance you created in Step 2
 * Navigate to the `fabric-on-eks` repo
+
+```bash
+cd
+cd fabric-on-eks
+```
 * You can choose any name for PEER_ORGS and PEER_DOMAINS, as long as it's one of the following:
     * org1
     * org2
@@ -229,7 +219,7 @@ will start Fabric CA and register our peer:
 ./workshop-remote-peer/start-remote-fabric-setup.sh
 ```
 
-Now let's investigate the results of the previous script. In the statements below, replace 'org5' with the org you
+Now let's investigate the results of the previous script. In the statements below, replace 'org1' with the org you
 selected in step 7:
 
 ```bash
@@ -247,14 +237,14 @@ rca-org1-6c769cc569-5cfqb          1/1       Running   0          1m
 register-p-org1-66bd5688b4-fhzmh   1/1       Running   0          28s
 ```
 
-Look at the logs for the register pod. Replace the pod name with your own pod name, the one returned by 'kubectl get po -n org5 ':
+Look at the logs for the register pod. Replace the pod name with your own pod name, the one returned by 'kubectl get po -n org1 ':
 
 ```bash
 kubectl logs register-p-org1-66bd5688b4-fhzmh -n org1
 ```
 
 You'll see something like this (edited for brevity), as the CA admin is enrolled with the intermediate CA, then the
-peer user (in this case 'michaelpeer1-org5') is registered with the CA:
+peer user (in this case 'michaelpeer1-org1') is registered with the CA:
 
 ```bash
 $ kubectl logs register-p-org1-66bd5688b4-fhzmh -n org1
@@ -295,12 +285,12 @@ Password: michaelpeer1-org1pw
 
 ### Step 9: Start the peer
 We are now ready to start the new peer. The peer runs as a pod in Kubernetes. Let's take a look at the pod spec before
-we deploy it. Replace 'michaelpeer1' with the name of your peer, and replace 'org5' with the org you selected. If you 
+we deploy it. Replace 'michaelpeer1' with the name of your peer, and replace 'org1' with the org you selected. If you 
 are unsure, you can simply do 'ls k8s' to view the yaml files that were generated based on your selections, and find
 the file start starts with 'fabric-deployment-remote-peer-'.
 
 ```bash
-more k8s/fabric-deployment-remote-peer-michaelpeer1-org1.yaml
+more k8s/fabric-deployment-workshop-remote-peer-michaelpeer1-org1.yaml
 ```
 
 There are a few things of interest in the pod yaml file:
@@ -309,10 +299,11 @@ There are a few things of interest in the pod yaml file:
 * The peer is bootstrapped using a script, which you can view by opening 'scripts/start-peer.sh'
 * The peer is exposed using a Kubernetes service
 
-So let's deploy the peer and check the logs:
+So let's deploy the peer and check the logs. You may need to wait a few seconds before 'kubectl logs' will return the log
+entries, as Kubernetes downloads and starts your container:
 
 ```bash
-kubectl apply -f k8s/fabric-deployment-remote-peer-michaelpeer1-org1.yaml
+kubectl apply -f k8s/fabric-deployment-workshop-remote-peer-michaelpeer1-org1.yaml
 kubectl logs deploy/michaelpeer1-org1 -n org1 -c michaelpeer1-org1
 ```
 
@@ -349,7 +340,12 @@ Then describe the pod using the pod name (replace the pod name below with your o
 kubectl describe po register-p-org1-66bd5688b4-rrpw6 -n org1
 ```
 
-Look at the Image Id attribute.
+Look at the Image Id attribute. You'll see it contains something like the entry below. fabric-ca-tools provides a CLI
+we can use to interact with a Fabric network:
+
+```bash
+docker-pullable://hyperledger/fabric-ca-tools@sha256:e4dfa9b12a854e3fb691fece50e4a52744bc584af809ea379d27c4e035cbf008
+```
 
 OK, so let's 'exec' into the register container (replace the pod name below with your own):
 
@@ -373,7 +369,9 @@ channel genesis block. The channel genesis block is stored on the EFS drive, and
 ls -l /data
 ```
 
-Look for the file titled mychannel.block.
+Look for the file titled mychannel.block. The channel genesis block provides the configuration for the channel. It's the 
+first block added to a channel, and forms 'block 0' in the Fabric blockchain for that channel. As a matter of interest,
+Fabric supports multiple blockchains within the same Fabric network, each blockchain associated with a Fabric channel.
 
 Interacting with peers using the 'peer' utility requires you to set ENV variables that provide context to the 'peer' utility.
 We'll use the following ENV variables to indicate which peer we want to interact with. You'll need to make the following changes:
@@ -409,10 +407,12 @@ Channels peers has joined:
 2018-07-26 03:40:45.133 UTC [main] main -> INFO 002 Exiting.....
 ```
 
-Now let's join a channel:
+Now let's join a channel. The statement below joins the peer you specified in the ENV variables above, with the channel
+defined in mychannel.block. The channel name is, conveniently, 'mychannel':
 
 ```bash
 peer channel join -b /data/mychannel.block
+peer channel list
 ```
 
 ```bash

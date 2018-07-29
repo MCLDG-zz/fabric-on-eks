@@ -80,6 +80,7 @@ function main {
     genOrderer
     genPeers
     genRemotePeers
+    genWorkshopRemotePeers
     genPeerJoinChannel
     genFabricTest
     genFabricTestMarbles
@@ -303,6 +304,23 @@ function genRemotePeers {
             PORTEND=$((PORTCHAIN-1))
             sed -e "s/%PEER_PREFIX%/${PEER_PREFIX}/g" -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORTEND%/${PORTEND}/g" -e "s/%PORTCHAIN%/${PORTCHAIN}/g" remote-peer/k8s/fabric-deployment-remote-peer.yaml > ${K8SYAML}/fabric-deployment-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
             sed -e "s/%PEER_PREFIX%/${PEER_PREFIX}/g" -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" remote-peer/k8s/fabric-nlb-remote-peer.yaml > ${K8SYAML}/fabric-nlb-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
+            COUNT=$((COUNT+1))
+        done
+        peerport=$((peerport+100))
+   done
+}
+
+function genWorkshopRemotePeers {
+    peerport=30750
+    log "Generating Workshop Remote Peer K8s YAML files"
+    for ORG in $PEER_ORGS; do
+        getDomain $ORG
+        local COUNT=1
+        PORTCHAIN=$peerport
+        while [[ "$COUNT" -le $NUM_PEERS ]]; do
+            PORTCHAIN=$((PORTCHAIN+2))
+            PORTEND=$((PORTCHAIN-1))
+            sed -e "s/%PEER_PREFIX%/${PEER_PREFIX}/g" -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%NUM%/${COUNT}/g" -e "s/%PORTEND%/${PORTEND}/g" -e "s/%PORTCHAIN%/${PORTCHAIN}/g" workshop-remote-peer/k8s/fabric-deployment-workshop-remote-peer.yaml > ${K8SYAML}/fabric-deployment-workshop-remote-peer-${PEER_PREFIX}${COUNT}-$ORG.yaml
             COUNT=$((COUNT+1))
         done
         peerport=$((peerport+100))
