@@ -143,7 +143,7 @@ function startICANoTLS {
     local HOME=$1
     local REPO=$2
     cd $HOME
-    log "Starting ICA in K8s"
+    log "Starting ICA without TLS in K8s"
     for ORG in $ORGS; do
         kubectl apply -f $REPO/k8s/fabric-deployment-ica-notls-$ORG.yaml
     done

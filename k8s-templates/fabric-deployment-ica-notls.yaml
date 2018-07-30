@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: %DOMAIN%
-  name: ica-%ORG%
+  name: ica-notls-%ORG%
 spec:
   replicas: 1
   strategy: {}
@@ -26,17 +26,17 @@ spec:
        app: hyperledger
        role: ca
        org: %ORG%
-       name: ica-%ORG%
+       name: ica-notls-%ORG%
   template:
     metadata:
       labels:
        app: hyperledger
        role: ca
        org: %ORG%
-       name: ica-%ORG%
+       name: ica-notls-%ORG%
     spec:
      containers:
-       - name: ica-%ORG%
+       - name: ica-notls-%ORG%
          image: hyperledger/fabric-ca:x86_64-1.1.0
          env:
          - name:  FABRIC_CA_SERVER_HOME
@@ -44,13 +44,13 @@ spec:
          - name:  FABRIC_CA_SERVER_TLS_ENABLED
            value: "false"
          - name:  FABRIC_CA_SERVER_CA_NAME
-           value: ica-%ORG%.%DOMAIN%
+           value: ica-notls-%ORG%.%DOMAIN%
          - name:  FABRIC_CA_SERVER_CSR_HOSTS
-           value: ica-%ORG%.%DOMAIN%
+           value: ica-notls-%ORG%.%DOMAIN%
          - name:  FABRIC_CA_SERVER_DEBUG
            value: "true"
          - name:  BOOTSTRAP_USER_PASS
-           value: ica-%ORG%-admin:ica-%ORG%-adminpw
+           value: ica-notls-%ORG%-admin:ica-notls-%ORG%-adminpw
          - name:  TARGET_CHAINFILE
            value: /data/%ORG%-ca-chain.pem
          - name:  FABRIC_ORGS
@@ -88,13 +88,13 @@ apiVersion: v1
 kind: Service
 metadata:
   namespace: %DOMAIN%
-  name: ica-%ORG%
+  name: ica-notls-%ORG%
 spec:
  selector:
    app: hyperledger
    role: ca
    org: %ORG%
-   name: ica-%ORG%
+   name: ica-notls-%ORG%
  type: NodePort
  ports:
    - name: endpoint

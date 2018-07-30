@@ -35,6 +35,7 @@ function main {
     createNamespaces $HOME $REPO
     startPVC $HOME $REPO
     startRCA $HOME $REPO
+    startICA $HOME $REPO
     startICANoTLS $HOME $REPO
     sleep 10
     startRegisterPeers $HOME $REPO
