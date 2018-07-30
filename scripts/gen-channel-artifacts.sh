@@ -97,6 +97,7 @@ $EXTERNAL_ORDERER_ADDRESSES"
       local COUNT=1
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
          if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [[ "$COUNT" -gt 1 ]]; then
+            COUNT=$((COUNT+1))
             continue
          fi
          initOrdererVars $ORG $COUNT
