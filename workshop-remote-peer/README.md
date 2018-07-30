@@ -432,6 +432,12 @@ You should see that your peer has now joined the channel.
 ### Step 11: Confirm peer has joined channel
 To confirm the peer has joined the channel you'll need to check the peer logs. If there are existing blocks on the channel 
 you should see them replicating to the new peer. Look for messages in the log file such as `Channel [mychannel]: Committing block [14385] to storage`.
+To view the peer logs, exit the 'register' container (by typing 'exit' on the command line). This will return you to 
+your EC2 bastion instance. Then enter (replacing the name of the peer with your own):
+
+```bash
+kubectl logs deploy/michaelpeer1-org1 -n org1 -c michaelpeer1-org1
+```
 
 ### Step 12: Install the marbles chaincode
 To install the marbles chaincode we'll first clone the chaincode repo to our 'register' container, then install the

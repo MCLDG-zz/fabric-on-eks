@@ -544,29 +544,28 @@ function startOrdererNLB {
             NLBHOSTPORT=$(kubectl get svc orderer${COUNT}-${ORG}-nlb -n ${DOMAIN} -o jsonpath='{.spec.ports[*].port}')
             sleep 10
         done
+        local ORDERERHOST=orderer${COUNT}-${ORG}.${DOMAIN}
         # Update the orderer deployment yaml with the orderer NLB DNS endpoint. This will allow remote connection from a peer,
         # and is necessary to ensure the orderer generates a TLS cert with the correct endpoint address.
         # This is only done if: there is more than 1 orderer AND $FABRIC_NETWORK_TYPE == "PROD" (in fact, this function is only
         # called if we are setting up a PROD network)
         if [ $COUNT -gt 1 ]; then
-            local ORDERERHOST=orderer${COUNT}-${ORG}.${DOMAIN}
             echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file $REPO/k8s/fabric-deployment-orderer${COUNT}-${ORG}.yaml"
             sed -e "s/${ORDERERHOST}/${NLBHOSTNAME}/g" -i $REPO/k8s/fabric-deployment-orderer$COUNT-$ORG.yaml
+            # Store the NLB endpoint for the orderers. These NLB endpoints will find their way into configtx.yaml. See
+            # the code after the for-loop below where scripts.env is updated. This ensures the NLB endpoints are in the
+            # genesis config block for the channel, and allows remote peers to connect to the orderer.
+            EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}        - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
         fi
         # Only the 2nd orderer is updated with the NLB endpoint. The 1st orderer retains a local orderer endpoint for connection
         # from local peers.
         if [ $COUNT -eq 2 ]; then
-            local ORDERERHOST=orderer${COUNT}-${ORG}.${DOMAIN}
             # Set the two ENV variables below in scripts/env.sh. These are used when setting the context for the
             # orderer. We set the context in env.sh, in the function initOrdererVars. If we are setting the context
             # for the 2nd orderer, we want to point the ORDERER_HOST ENV var to the NLB endpoint.
             echo "replacing host: ${ORDERERHOST} with NLB DNS: ${NLBHOSTNAME} in file ${SCRIPTS}/env.sh"
             sed -e "s/EXTERNALORDERERHOSTNAME=\"\"/EXTERNALORDERERHOSTNAME=\"${NLBHOSTNAME}\"/g" -i $SCRIPTS/env.sh
             sed -e "s/EXTERNALORDERERPORT=\"\"/EXTERNALORDERERPORT=\"${NLBHOSTPORT}\"/g" -i $SCRIPTS/env.sh
-            # Store the NLB endpoint for the 2nd orderer. This NLB endpoint will find its way into configtx.yaml. See
-            # the code after the for-loop where scripts.env is updated. This ensures the NLB endpoint is in the
-            # genesis config block for the channel, and allows remote peers to connect to the orderer.
-            EXTERNALORDERERADDRESSES="${EXTERNALORDERERADDRESSES}        - ${NLBHOSTNAME}:${NLBHOSTPORT}\n"
         fi
         COUNT=$((COUNT+1))
       done

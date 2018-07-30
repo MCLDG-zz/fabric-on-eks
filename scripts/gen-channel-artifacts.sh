@@ -89,10 +89,9 @@ Profiles:
       # Orderer Type: The orderer implementation to start
       # Available types are \"solo\" and \"kafka\"
       OrdererType: $ORDERER_TYPE
-      Addresses:"
-# $EXTERNAL_ORDERER_ADDRESSES"
-# should be ok if we have the endpoints below. One of the orderers is local, the other exposed via NLB
-# if we need all the endpoints we can uncomment the $EXTERNAL_ORDERER_ADDRESSES variable above, and remove the quote after Addresses:
+      Addresses:
+$EXTERNAL_ORDERER_ADDRESSES"
+# This includes the NLB endpoints in configtx.yaml, so that remote peers can connect to the orderer
 
    for ORG in $ORDERER_ORGS; do
       local COUNT=1
