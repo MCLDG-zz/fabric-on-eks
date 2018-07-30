@@ -289,21 +289,6 @@ function stopOrderer {
     confirmDeploymentsStopped orderer
 }
 
-function stopTest {
-    if [ $# -ne 2 ]; then
-        echo "Usage: stopTest <home-dir> <repo-name>"
-        exit 1
-    fi
-    local HOME=$1
-    local REPO=$2
-    cd $HOME
-    log "Stopping Test Cases in K8s"
-    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric.yaml
-    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
-    log "Confirm Test Case pod has stopped"
-    confirmDeploymentsStopped test-fabric
-}
-
 function stopChannelArtifacts {
     if [ $# -ne 2 ]; then
         echo "Usage: stopChannelArtifacts <home-dir> <repo-name>"
@@ -711,6 +696,21 @@ function startTest {
     log "Starting Test Cases in K8s"
     kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
     confirmDeployments
+}
+
+function stopTest {
+    if [ $# -ne 2 ]; then
+        echo "Usage: stopTest <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Stopping Test Cases in K8s"
+    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric.yaml
+    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
+    log "Confirm Test Case pod has stopped"
+    confirmDeploymentsStopped test-fabric
 }
 
 function startTestMarblesWorkshop {

@@ -21,6 +21,7 @@ function main {
     stopJobsFabric $HOME $REPO
     set +e
     stopTest $HOME $REPO
+    stopTestMarblesWorkshop $HOME $REPO
     stopChannelArtifacts $HOME $REPO
     stopRegisterOrgs $HOME $REPO
     stopRegisterOrderers $HOME $REPO
