@@ -182,11 +182,11 @@ function instantiateChaincode {
 
 function chaincodeInit {
    log "Initialising marbles on $PEER_NAME ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_owner","o9999999999999999991","edge", "United Marbles"]}' $ORDERER_CONN_ARGS
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_owner","o9999999999999999990","braendle", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_owner","o9999999999999999990","edge", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_owner","o9999999999999999991","braendle", "United Marbles"]}' $ORDERER_CONN_ARGS
    sleep 5
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999991", "blue", "50", "o9999999999999999991", "United Marbles"]}' $ORDERER_CONN_ARGS
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999990", "red", "35", "o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999990", "blue", "50", "o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["init_marble","m999999999991", "red", "35", "o9999999999999999991", "United Marbles"]}' $ORDERER_CONN_ARGS
 }
 
 function chaincodeQuery {
@@ -200,14 +200,14 @@ function chaincodeQuery {
 function transferMarble {
    set +e
    log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["set_owner","m999999999990","o9999999999999999991", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["set_owner","m999999999991","o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
    log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
 
 function transferMarbleAgain {
    set +e
    log "Transferring marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
-   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["set_owner","m999999999990","o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
+   peer chaincode invoke -C $CHANNEL_NAME -n $CHAINCODE_NAME -c '{"Args":["set_owner","m999999999991","o9999999999999999991", "United Marbles"]}' $ORDERER_CONN_ARGS
    log "Successfully transferred marbles in the channel '$CHANNEL_NAME' on the peer '$PEER_NAME' ..."
 }
 

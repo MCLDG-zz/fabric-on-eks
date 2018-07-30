@@ -380,7 +380,7 @@ We'll use the following ENV variables to indicate which peer we want to interact
 * Change 'org1' to the name of the org you belong to. Change it everywhere it appears
 
 You should still be inside the register container at this point. Copy all the variables below, and paste them into your 
-terminal window.
+terminal window. If you exit the register container, and 'exec' back in later, remember to rerun these export statements.
 
 ```bash
 export CORE_PEER_TLS_ENABLED=false
@@ -480,10 +480,11 @@ You should see the following:
 # peer chaincode list --installed
 Get installed chaincodes on peer:
 Name: marbles-workshop, Version: 1.0, Path: github.com/hyperledger/marbles/chaincode/src/marbles, Id: 7c07640a582822f8bb2364fa0ab0d204ba8b3d6b28f559027fcbdccfe65b3aae
-2018-07-26 08:58:31.780 UTC [main] main -> INFO 001 Exiting.....
+2018-07-30 05:45:25.832 UTC [main] main -> INFO 001 Exiting.....
 # peer chaincode list --instantiated -C mychannel
 Get instantiated chaincodes on channel mychannel:
-2018-07-26 08:58:31.887 UTC [main] main -> INFO 001 Exiting.....
+Name: marbles-workshop, Version: 1.0, Path: github.com/hyperledger/marbles/chaincode/src/marbles, Escc: escc, Vscc: vscc
+2018-07-30 05:45:25.940 UTC [main] main -> INFO 001 Exiting.....
 ```
 
 ### Step 13: Creating a user
@@ -558,21 +559,22 @@ export CORE_PEER_MSPCONFIGPATH=/data/orgs/org1/admin/msp
 ### Step 14: Invoke transactions in Fabric
 Let's run a query. In Fabric, a query will execute on the peer node and query the world state, which is the current
 state of the ledger. World state is stored in either a CouchDB or LevelDB key-value store. The query below will
-return the latest state for 'marble2'
+return the latest state for 'marble2'. The first time you run chaincode it may take a few seconds as the Docker
+container that hosts the chaincode is downloaded and created.
 
 ```bash
-peer chaincode query -C mychannel -n marblescc -c '{"Args":["readMarble","marble2"]}'
+peer chaincode query -C mychannel -n marbles-workshop -c '{"Args":["read_everything"]}' 
 ```
 
 ```bash
-# peer chaincode query -C mychannel -n marblescc -c '{"Args":["readMarble","marble2"]}'
-2018-07-26 05:39:16.129 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 001 Using default escc
-2018-07-26 05:39:16.129 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 002 Using default vscc
-Query Result: {"color":"red","docType":"marble","name":"marble2","owner":"edge","size":27}
-2018-07-26 05:39:16.308 UTC [main] main -> INFO 003 Exiting.....
+# peer chaincode query -C mychannel -n marbles-workshop -c '{"Args":["read_everything"]}'
+2018-07-30 05:50:16.760 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 001 Using default escc
+2018-07-30 05:50:16.760 UTC [chaincodeCmd] checkChaincodeCmdParams -> INFO 002 Using default vscc
+Query Result: {"owners":[{"docType":"marble_owner","id":"o9999999999999999990","username":"braendle","company":"United Marbles","enabled":true},{"docType":"marble_owner","id":"o9999999999999999991","username":"edge","company":"United Marbles","enabled":true}],"marbles":[{"docType":"marble","id":"m999999999990","color":"red","size":35,"owner":{"id":"o9999999999999999990","username":"braendle","company":"United Marbles"}},{"docType":"marble","id":"m999999999991","color":"blue","size":50,"owner":{"id":"o9999999999999999991","username":"edge","company":"United Marbles"}}]}
+2018-07-30 05:50:16.779 UTC [main] main -> INFO 003 Exiting.....
 ```
 
-Invoking a transaction is different to running a query. Whereas a query runs locally in your own peer, a transaction
+Invoking a transaction is different to running a query. Whereas a query runs locally on your own peer, a transaction
 first runs locally, simulating the transaction against your local world state, then the results are sent to the 
 orderer. The orderer groups the transactions into blocks and distributes them to all peer nodes. All the peers
 then update their ledgers and world state with each transaction in the block.
@@ -580,9 +582,9 @@ then update their ledgers and world state with each transaction in the block.
 Since the transaction is sent to the orderer, you need to provide the orderer endpoint when invoking a transaction:
 
 ```bash
-export ORDERER_CONN_ARGS="-o a61689643897211e8834f06b86f026a6-4a015d7a09a2998a.elb.us-west-2.amazonaws.com:7050"
-peer chaincode invoke -C mychannel -n marblescc -c '{"Args":["transferMarble","marble2","smith"]}' $ORDERER_CONN_ARGS
-peer chaincode query -C mychannel -n marblescc -c '{"Args":["readMarble","marble2"]}'
+export ORDERER_CONN_ARGS="-o a8a50caf493b511e8834f06b86f026a6-77ab14764e60b4a1.elb.us-west-2.amazonaws.com:7050"
+peer chaincode invoke -C mychannel -n marbles-workshop -c '{"Args":["set_owner","m999999999990","o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode query -C mychannel -n marbles-workshop -c '{"Args":["read_everything"]}' 
 ```
 
 ### Step 15: Connect an application to your Fabric peer
@@ -592,11 +594,79 @@ network, and what activities are being carried out by the other workshop partici
 
 The Marbles client application requires connectivity to three Fabric components:
 
-* Orderer: the Orderer was created by the facilitator before the workshop started. The facilitator will provide the endpoint
+* Orderer: the Orderer was created by the facilitator before the workshop started. The facilitator will provide the endpoint 
+(in fact, it should have been provided for you in Step 14. See the statement 'export ORDERER_CONN_ARGS=')
 * Peer: this is the peer you started in step 9. We will expose this using an NLB below (NLB because peers communicate using gRPC)
 * CA: this is the CA you started in step 8. We will expose this using an ELB below (ELB because the CA server exposes a REST API)
 
-Marbles requires changes to the config/connection_profile_tls.json file.
+Let's create the NLB endpoints for the peer and the ca. The K8s YAML files to create these would have been generated for you.
+Replace the org numbers below to match yours, and the name of the peer (i.e. michaelpeer) to match your own. These files
+should already exist in the k8s/ directory:
+
+```bash
+cd
+cd fabric-on-eks
+kubectl apply -f k8s/fabric-nlb-ca-org1.yaml
+kubectl apply -f k8s/fabric-nlb-remote-peer-michaelpeer1-org1.yaml
+```
+
+When you check to see that the service endpoints were created, focus on the EXTERNAL-IP column. You should expect to
+see the start of a DNS endpoint here. 
+
+```bash
+$ kubectl get svc -n org1
+NAME                    TYPE           CLUSTER-IP       EXTERNAL-IP        PORT(S)                         AGE
+ica-org1                NodePort       100.69.223.117   <none>             7054:30820/TCP                  1h
+ica-org1-nlb            LoadBalancer   100.67.187.247   a4572233e93c5...   7054:30786/TCP                  33s
+michaelpeer1-org1       NodePort       100.71.189.75    <none>             7051:30751/TCP,7052:30752/TCP   1h
+michaelpeer1-org1-nlb   LoadBalancer   100.64.236.245   a55e52d7d93c5...   7051:31701/TCP                  5s
+rca-org1                NodePort       100.65.85.156    <none>             7054:30800/TCP                  1h
+```
+
+You can see the full endpoint using `kubectl describe`, as follows. The LoadBalancer Ingress shows the AWS DNS representing
+the ELB endpoint for the intermediate CA, ica-org1:
+
+```bash
+$ kubectl describe svc ica-org1-nlb -n org1
+Name:                     ica-org1-nlb
+Namespace:                org1
+Labels:                   <none>
+Annotations:              kubectl.kubernetes.io/last-applied-configuration={"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"service.beta.kubernetes.io/aws-load-balancer-type":"nlb"},"name":"ica-org1-nlb","namesp...
+                          service.beta.kubernetes.io/aws-load-balancer-type=nlb
+Selector:                 app=hyperledger,name=ica-org1,org=org1,role=ca
+Type:                     LoadBalancer
+IP:                       100.67.187.247
+LoadBalancer Ingress:     a4572233e93c511e8a5200a2330c2ef3-6cd15c4b453d4003.elb.us-east-1.amazonaws.com
+Port:                     endpoint  7054/TCP
+TargetPort:               7054/TCP
+NodePort:                 endpoint  30786/TCP
+Endpoints:                100.96.1.158:7054
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:
+  Type    Reason                Age   From                Message
+  ----    ------                ----  ----                -------
+  Normal  EnsuringLoadBalancer  5m    service-controller  Ensuring load balancer
+  Normal  EnsuredLoadBalancer   5m    service-controller  Ensured load balancer
+```
+
+Do the same to view the NLB endpoint for the peer.
+
+In the next step we'll configure Marbles to use these endpoints, and connect the application to the Fabric network.
+
+### Step 16
+To start, let's clone the Marbles application. On your own laptop, in any folder you choose:
+
+```bash
+git clone https://github.com/IBM-Blockchain/marbles.git
+cd marbles
+```
+
+To configure the connectivity required, Marbles requires a connection profile that contains the connectivity endpoints.
+I have provided a template of this file for you in the fabric-on-eks repo. You can either clone this repo to your local
+laptop and copy the files, or Copy the following files :
+
+* Copy fabric-on-eks/
 
 NOTE: Marbles running locally cannot connect to the ELB port 7054 if you are running your VPN software. Please
 stop the VPN before connecting.
