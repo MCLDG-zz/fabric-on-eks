@@ -18,7 +18,17 @@
 set +e
 
 function main {
+    echo "Beginning setup of Marbles chaincode for the Fabric workshop ..."
+    cd $HOME/$REPO
+    source util-prep.sh
+    source $SCRIPTS/env.sh
+    cd $HOME/$REPO
+    source utilities.sh
+    startTestMarblesWorkshop $HOME $REPO
+    whatsRunning
+    echo "Setup of Marbles chaincode for the Fabric workshop complete"
 
+    echo "Copying the crypto material to S3"
     #create the s3 bucket, used to store the 'tar' of the keys/certs in the EFS directory /opt/share
     echo -e "creating s3 bucket $S3BucketName"
     #quick way of determining whether the AWS CLI is installed and a profile exists
@@ -39,16 +49,7 @@ function main {
     else
         echo "AWS CLI is not configured on this node. If you want the script to automatically create the S3 bucket, install and configure the AWS CLI"
     fi
-
-    echo "Beginning setup of Marbles chaincode for the Fabric workshop ..."
-    cd $HOME/$REPO
-    source util-prep.sh
-    source $SCRIPTS/env.sh
-    cd $HOME/$REPO
-    source utilities.sh
-    startTestMarblesWorkshop $HOME $REPO
-    whatsRunning
-    echo "Setup of Marbles chaincode for the Fabric workshop complete"
+    echo "Copying the crypto material to S3 complete"
 }
 
 SDIR=$(dirname "$0")
