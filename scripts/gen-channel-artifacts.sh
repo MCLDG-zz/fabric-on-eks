@@ -96,6 +96,9 @@ $EXTERNAL_ORDERER_ADDRESSES"
    for ORG in $ORDERER_ORGS; do
       local COUNT=1
       while [[ "$COUNT" -le $NUM_ORDERERS ]]; do
+         if [ $FABRIC_NETWORK_TYPE == "PROD" ] && [[ "$COUNT" -gt 1 ]]; then
+            continue
+         fi
          initOrdererVars $ORG $COUNT
          echo "        - $ORDERER_HOST:$ORDERER_PORT"
          COUNT=$((COUNT+1))
