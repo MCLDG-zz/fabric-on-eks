@@ -709,6 +709,7 @@ function stopTest {
     log "Stopping Test Cases in K8s"
     kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric.yaml
     kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles.yaml
+    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles-workshop.yaml
     log "Confirm Test Case pod has stopped"
     confirmDeploymentsStopped test-fabric
 }
@@ -724,19 +725,6 @@ function startTestMarblesWorkshop {
     log "Starting Test Cases for Marbles Workshop in K8s"
     kubectl apply -f $REPO/k8s/fabric-deployment-test-fabric-marbles-workshop.yaml
     confirmDeployments
-}
-
-function stopTestMarblesWorkshop {
-    if [ $# -ne 2 ]; then
-        echo "Usage: stopTestMarblesWorkshop <home-dir> <repo-name>"
-        exit 1
-    fi
-    local HOME=$1
-    local REPO=$2
-    cd $HOME
-    log "Stopping Test Cases for Marbles Workshop in K8s"
-    kubectl delete -f $REPO/k8s/fabric-deployment-test-fabric-marbles-workshop.yaml
-    confirmDeploymentsStopped test-fabric-marbles-workshop
 }
 
 function getAdminOrg {
