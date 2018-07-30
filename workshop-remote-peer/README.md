@@ -742,7 +742,8 @@ new marbles or transfer them.
 * Click the magnifying glass on the left, then click on a marble to see the transactions related to that marble. 
 
 Now go ahead and drag marbles from one owner to another, or create new marbles. Watch how the UI explains what is
-happening inside Fabric. 
+happening inside Fabric. For further 'geek-level' detail, check out the terminal window where you started the marbles
+app. You'll see debug statements showing the transactions being sent by the client application to the Fabric network.
 
 Add yourself as a new marble owner. Now, for some reason, the developers of the app created a chaincode function
 to do this, but did not include this function in the UI. So we'll do it the hard way.

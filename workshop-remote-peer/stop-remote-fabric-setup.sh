@@ -22,7 +22,7 @@ function main {
     for DELETE_ORG in $ORGS; do
         stopRemotePeers $HOME $REPO $DELETE_ORG
         stopRegisterPeers $HOME $REPO $DELETE_ORG
-        stopICANoTLS $HOME $REPO $DELETE_ORG
+        stopICA $HOME $REPO $DELETE_ORG
         stopRCA $HOME $REPO $DELETE_ORG
         stopPVC $HOME $REPO $DELETE_ORG
         getDomain $DELETE_ORG
