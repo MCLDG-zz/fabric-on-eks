@@ -663,17 +663,78 @@ cd marbles
 ```
 
 To configure the connectivity required, Marbles requires a connection profile that contains the connectivity endpoints.
-I have provided a template of this file for you in the fabric-on-eks repo. You can either clone this repo to your local
-laptop and copy the files, or Copy the following files :
+I have provided a template of this file for you in the fabric-on-eks repo. Use cURL to download them directly. If using the cURL method,
+make sure you are in the marbles directory, in the marbles repo:
 
-* Copy fabric-on-eks/
+```bash
+cd config
+curl  https://raw.githubusercontent.com/MCLDG/fabric-on-eks/master/workshop-remote-peer/marbles/connection_profile_eks.json -o connection_profile_eks.json
+curl  https://raw.githubusercontent.com/MCLDG/fabric-on-eks/master/workshop-remote-peer/marbles/marbles_eks.json -o marbles_eks.json
+```
 
+Still in the config directory, edit connection_profile_eks.json:
+
+* Do a global search & replace on 'org1', replacing it with the org you have chosen
+* Do a global search & replace on 'michaelpeer', replacing it with your peer name
+* In the 'replace' commands below, make sure you do not change the port number, nor remove the protocol (e.g. grpc://)
+* Replace the orderer URL with the NLB endpoint provided by your facilitator (The same one you used in Step 14. See the 
+statement 'export ORDERER_CONN_ARGS='):
+
+```json
+    "orderers": {
+        "orderer3-org0.org0": {
+            "url": "grpc://a8a50caf493b511e8834f06b86f026a6-77ab14764e60b4a1.elb.us-west-2.amazonaws.com:7050",
+```
+
+* Replace the peer URL (both url and eventUrl) with the endpoint you obtained in Step 15 when 
+running `kubectl describe svc <your peer service name> -n org1` 
+
+```json
+    "peers": {
+        "michaelpeer1-org1.org1": {
+            "url": "grpc://a55e52d7d93c511e8a5200a2330c2ef3-25d11c6db68acd98.elb.us-east-1.amazonaws.com:7051",
+            "eventUrl": "grpc://a55e52d7d93c511e8a5200a2330c2ef3-25d11c6db68acd98.elb.us-east-1.amazonaws.com:7052",
+```
+
+* Replace the certificateAuthorities URL with the endpoint you obtained in Step 15 when 
+running `kubectl describe svc <your CA service name> -n org1` 
+
+```json
+    "certificateAuthorities": {
+        "ica-org1": {
+            "url": "http://a4572233e93c511e8a5200a2330c2ef3-6cd15c4b453d4003.elb.us-east-1.amazonaws.com:7054",
+```
+
+One final change will ensure our new connection profile is used:
+
+* In the marbles repo, edit the file `gulpfile.js`
+* Around line 40, add this line:
+
+```json
+gulp.task('marbles_eks', ['env_eks', 'watch-sass', 'watch-server', 'server']);		//run with command `gulp marbles_eks` for AWS EKS container service
+```
+
+* Around line 50, add this section:
+
+```json
+// AWS EKS Container Service
+gulp.task('env_eks', function () {
+	env['creds_filename'] = 'marbles_eks.json';
+});
+```
+
+### Step 16: Running and using the marbles application
 NOTE: Marbles running locally cannot connect to the ELB port 7054 if you are running your VPN software. Please
 stop the VPN before connecting.
 
-I also needed to 
+In the marbles repo, in the root folder of the repo, run the following:
 
-### Step 16: Using the marbles application
+```bash
+gulp marbles_eks
+```
+
+If this fails, ensure your VPN is not running.
+
 In a browser, navigate to: http://localhost:3001/home. Before doing anything else, configure the UI:
 
 * Click 'Settings' and set Story Mode ON. This will show you what Fabric is doing behind the scenes when you create
@@ -686,15 +747,17 @@ happening inside Fabric.
 Add yourself as a new marble owner. Now, for some reason, the developers of the app created a chaincode function
 to do this, but did not include this function in the UI. So we'll do it the hard way.
 
-'exec' into the register container and enter the export statements you used in Step 10. Then identify yourself as
-a user:
+On your EC2 bastion instance, 'exec' into the register container and enter the export statements you used in Step 10. 
+Then identify yourself as a user:
 
 ```bash
 export CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/orgs/org1/user/msp
 ```
 
-Execute the chaincode to add yourself as a marble owner. Change the numbers below to some other random number (i.e. 
-o928734982374 and m928734982374), and change 'bob' to your alias (something unique). If you execute both invoke 
+Execute the chaincode below to add yourself as a marble owner. Change the numbers below to some other random number (i.e. 
+o9999999999999999990 and m999999999990 - just make sure you have the same or fewer digits), and change 'bob' to your 
+alias (something unique). MAKE SURE that both the 'o' and 'm'
+prefixes to your owner and marble names are still there. The marbles app depends on them. If you execute both invoke 
 statements immediately after each other, the second one will probably fail. Any idea why? If you watched what happens
 in Fabric when you transfer a marble, it will give you a strong hint.
 
@@ -703,10 +766,13 @@ There is no issue with running these statements multiple times.
 
 ```bash
 export ORDERER_CONN_ARGS="-o a61689643897211e8834f06b86f026a6-4a015d7a09a2998a.elb.us-west-2.amazonaws.com:7050"
-peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_owner","o928734982375","bob", "United Marbles"]}' $ORDERER_CONN_ARGS
-peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_marble","m928734982375", "blue", "35", "o928734982375", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_owner","o9999999999999999990","bob", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_marble","m999999999990", "blue", "35", "o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
 peer chaincode query -C mychannel -n marbles -c '{"Args":["read_everything"]}'
 ```
+
+Now jump back to the UI and you should automatically see these changes to the blockchain state reflected in the app. You can
+now add new marbles via the UI (or via the CLI) and transfer marbles to/from other participants.
 
 
 

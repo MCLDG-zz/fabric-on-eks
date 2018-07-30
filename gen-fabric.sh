@@ -149,6 +149,7 @@ function genICA {
     for ORG in $ORGS; do
         getDomain $ORG
         sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%FABRICORGS%/${FABRICORGS}/g" -e "s/%PORT%/${icaport}/g" ${K8STEMPLATES}/fabric-deployment-ica.yaml > ${K8SYAML}/fabric-deployment-ica-$ORG.yaml
+        sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" -e "s/%FABRICORGS%/${FABRICORGS}/g" -e "s/%PORT%/${icaport}/g" ${K8STEMPLATES}/fabric-deployment-ica-notls.yaml > ${K8SYAML}/fabric-deployment-ica-notls-$ORG.yaml
         sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-nlb-ca.yaml > ${K8SYAML}/fabric-nlb-ca-$ORG.yaml
         sed -e "s/%ORG%/${ORG}/g" -e "s/%DOMAIN%/${DOMAIN}/g" ${K8STEMPLATES}/fabric-elb-ca.yaml > ${K8SYAML}/fabric-elb-ca-$ORG.yaml
         icaport=$((icaport+100))

@@ -38,7 +38,7 @@
         }
     },
     "orderers": {
-        "orderer2-org0.org0": {
+        "orderer3-org0.org0": {
             "url": "grpc://a8a50caf493b511e8834f06b86f026a6-77ab14764e60b4a1.elb.us-west-2.amazonaws.com:7050",
             "grpcOptions": {
                 "ssl-target-name-override": null,

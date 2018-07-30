@@ -135,6 +135,22 @@ function startICA {
     confirmDeployments
 }
 
+function startICANoTLS {
+    if [ $# -ne 2 ]; then
+        echo "Usage: startICANoTLS <home-dir> <repo-name>"
+        exit 1
+    fi
+    local HOME=$1
+    local REPO=$2
+    cd $HOME
+    log "Starting ICA in K8s"
+    for ORG in $ORGS; do
+        kubectl apply -f $REPO/k8s/fabric-deployment-ica-notls-$ORG.yaml
+    done
+    #make sure the svc starts, otherwise subsequent commands may fail
+    confirmDeployments
+}
+
 function removeNamespaces {
     if [ $# -ne 3 ]; then
         echo "Usage: removeNamespaces <home-dir> <repo-name> <domain - delete namespace where namespace = domain. Example of a domain would be org2>"
@@ -190,6 +206,7 @@ function stopICA {
     log "Stopping ICA in K8s"
     cd $HOME
     kubectl delete -f $REPO/k8s/fabric-deployment-ica-$ORG.yaml
+    kubectl delete -f $REPO/k8s/fabric-deployment-ica-notls-$ORG.yaml
     confirmDeploymentsStopped ica $ORG
 }
 
