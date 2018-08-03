@@ -16,6 +16,19 @@ Fabric peers as pods in Kubernetes. Once the peer is running, the participants w
 channel, install chaincode, test the channel connection, then run a Node.js application that connects to the peer node
 and displays the peers ledger state in a colourful UI.
 
+## The Architecture
+![Marbles Workshop Architecture](WorkshopArchitecture.jpg?raw=true "Marbles Workshop Architecture")
+
+* You will interact with Hyperledger Fabric using the Marbles application, which is a Node.js application that you will
+run locally on your laptop. During this workshop you will configure and run this application.
+* The Marbles application will connect to a Fabric peer running in your own AWS account, in any region you choose. During
+this workshop you will configure and run the Fabric peer.
+* The Marbles application also connects to an Orderer service, which orders the transactions and groups them into blocks.
+* The Orderer service will run in the facilitators AWS account, in a region he/she chooses.
+
+This represents a typical Hyperledger network, where the Orderer is owned either by a joint-venture, a consortium or some other
+legal entity, and each member of the network runs their peers independently, connected to the Orderer.
+
 ## Workshop pre-requisites
 You're going to interact with Fabric and the Kubernetes cluster from a bastion host that mounts an EFS drive. EFS is 
 required to store the crypto material used by Fabric, and you'll need to copy the appropriate certs/keys to/from the EFS drive.
