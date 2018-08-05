@@ -16,17 +16,13 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #vpc details for cluster: fabric-account-1
+AWSAccount=506709822501
+AWSAccountProfile=account2
 region=us-west-2
-vpcid=vpc-8f50aff7
-subneta=subnet-e6a7ec9f
-subnetb=subnet-29760262
-subnetc=subnet-6b062331
-keypairname=eksctl
-volumename=dltefs
-mountpoint=opt/share
+keypairname=eks-fabric-key-account1
 
-aws cloudformation deploy --stack-name ec2-cmd-client --template-file efs/ec2-for-efs-3AZ.yaml \
+aws cloudformation deploy --stack-name ec2-cmd-client --template-file efs/ec2-for-efs-2AZ.yaml \
 --capabilities CAPABILITY_NAMED_IAM \
---parameter-overrides VPCId=$vpcid SubnetA=$subneta SubnetB=$subnetb SubnetC=$subnetc \
+--parameter-overrides VPCId=$vpcid SubnetA=$subneta SubnetB=$subnetb \
 KeyName=$keypairname VolumeName=$volumename MountPoint=$mountpoint \
---region $region --profile account2
+--profile $AWSAccountProfile --region $region

@@ -37,7 +37,7 @@ The pre-requisites are as follows:
 * An AWS account where you can create a Kubernetes cluster (either your own Kubernetes cluster or EKS)
 * It's preferable that you have some basic Kubernetes experience
 * Git installed locally. See https://git-scm.com/downloads
-* Node JS installed. You'll need version 6.10.1 - 6.11.x. See https://nodejs.org/en/download/. If you have a different 
+* Node JS installed. You'll need version > 6.10.1, but it must be 6.x.x. See https://nodejs.org/en/download/. If you have a different 
 version, you can uninstall it (on Mac), and install the correct version using homebrew:
 
 ```bash
@@ -62,6 +62,11 @@ $ npm -v
 ```
 
 * npm installed locally on your laptop. It should have been installed together with node in the step above. If not, see https://www.npmjs.com/get-npm
+* AWS CLI installed - either on your laptop or on the Cloud9 server you create in Step 1 - with the appropriate AWS API credentials 
+pointing to the account and region where you will deploy Kubernetes. You can use 
+[~/.aws/credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html) 
+or [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html). For more information 
+read the [AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-environment.html).
 
 ## Getting Started
 We create the Kubernetes cluster first, in Step 1. This has the advantage that we can deploy the EC2 bastion (created in Step 2)
@@ -70,20 +75,8 @@ configure kubectl on the EC2 bastion to connect to the Kubernetes cluster via th
 It's a small price to pay, so we'll stick with this approach for now. 
  
 ### Step 1: Create a Kubernetes cluster
-You need a K8s cluster to start. You have two ways to create the cluster:
-
-* Use KOPS to create a cluster: https://github.com/kubernetes/kops
-* Depending on your region, you can use EKS: https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html
-
-Regardless of which method you choose, make sure you create the worker nodes using a keypair that you have downloaded 
-to your laptop so you can subsequently SSH into the K8s worker nodes.
-
-Once your K8s cluster is created, SSH into each worker node and install EFS utils to enable the node to mount the EFS that 
-stores the CA certs/keys.
-
-```bash
-sudo yum install -y amazon-efs-utils
-```
+You need a K8s cluster to start. The easiest way to do this is to create an EKS cluster using the eksctl tool. Open
+the `eks` folder in this repo and follow the instructions in the README.
 
 ### Step 2: Create an EC2 instance and EFS 
 You will need an EC2 bastion, which you will use to start and interact with the Fabric network. You will also need an EFS volume for 
@@ -99,10 +92,15 @@ cd fabric-on-eks
 ```
 
 In the repo directory, check the parameters in efs/deploy-ec2.sh and update them as follows:
-* The VPC and Subnet should be those of your existing K8s cluster worker nodes
-* Keyname is an AWS EC2 keypair you own, that you have previously saved to your laptop. You'll need this to access the EC2 bastion created by deploy-ec2.sh
-* VolumeName is the name assigned to your EFS volume (there is no need to change this)
+* The VPC and Subnet should be those of your existing K8s cluster worker nodes. You can find these in the AWS VPC console.
+Look for the VPC with a name based on the name of your EKS cluster. If you created your cluster in us-west-2 there are
+three subnets.
+* Keyname is the AWS EC2 keypair you used for your EKS cluster. You'll use the same keypair to access the EC2 bastion created by deploy-ec2.sh
+* VolumeName is the name assigned to your EFS volume. There is no need to change this
 * Region should match the region where your K8s cluster is deployed
+* If your AWS CLI already points to the account & region your Kubernetes cluster was created, you can go ahead and run the 
+command below. If you are using AWS CLI profiles, add a --profile argument to your `aws cloudformation deploy` statement
+in efs/deploy-ec2.sh
 
 Once all the parameters are set, in a terminal window, run 
 
@@ -110,27 +108,57 @@ Once all the parameters are set, in a terminal window, run
 ./efs/deploy-ec2.sh 
 ```
 
-Check the CloudFormation console for completion. Once the CFN stack is complete, SSH to one of the EC2 bastion instances using the keypair 
-above. Either of the EC2 instances will work. Once you've setup an EC2 instance, continue to SSH into the same EC2 bastion instance.
+Check the CloudFormation console for completion. Once the CFN stack is complete, SSH to the EC2 bastion instance using the keypair 
+above. 
 
 ### Step 3: Prepare the EC2 instance for use
-The EC2 instance you have created in Step 2 should already have kubectl installed. However, kubectl will have no
-context and will not be pointing to a kubernetes cluster. We need to point it to the K8s cluster we created in Step 1.
+The EC2 instance you created in Step 2 should already have kubectl and the AWS CLI installed. However, kubectl will have no
+context and will not be pointing to a kubernetes cluster, and AWS CLI will have no credentials. We need to point kubectl to 
+the K8s cluster we created in Step 1, and we need to provide credentials for AWS CLI.
 
-The easiest method (though this should be improved) is to copy the contents of your own ~/.kube/config file from 
-your Mac (or whichever device you used to create the Kubernetes cluster in Step 1). If you are expert on the format
-of ~/.kube/config, you could copy only the sections relevant to your new K8s cluster.
+To provide AWS CLI credentials, we'll copy them either from our Mac or Cloud9 - i.e. whichever we used to create the EKS cluster.
+
+We'll do the same for the kube config file, i.e. copy the contents of the kube config file from 
+your Mac or Cloud9 instance. If you followed the default steps in Step 1, you will have a kube config file called
+./kubeconfig.eks-fabric.yaml, in the same directory you were in when you created the EKS cluster. We want to copy this
+file to the EC2 bastion instance.
 
 To copy the kube config, do the following:
-* On your laptop, copy the contents of ~/.kube/config
-* SSH into the EC2 instance created above, and do the following: 
+* On your laptop or Cloud9 instance, open ./kubeconfig.eks-fabric.yaml  and copy all the contents
+* SSH into the EC2 instance created above. You can find the DNS or IP address in the EC2 console: 
+
+```bash
+ssh ec2-user@ec2-34-216-209-127.us-west-2.compute.amazonaws.com -i eks/eksctl-keypair.pem
+```
+
+* Then create the kube config file:
 
 ```bash
 mkdir /home/ec2-user/.kube
 cd /home/ec2-user/.kube
 vi config
 ```
-* hit the letter 'i' and paste the contents you copied from your Mac. Hit the escape key, then shift-zz to save and exit vi
+* hit the letter 'i' and paste the kube config contents you copied above. Hit the escape key, then shift-zz to save and exit vi
+
+To copy the AWS CLI config and credentials files, do the following:
+* On your laptop or Cloud9 instance, open ~/.aws/config and copy all the contents
+* SSH into the EC2 instance created above: 
+
+```bash
+ssh ec2-user@ec2-34-216-209-127.us-west-2.compute.amazonaws.com -i eks/eksctl-keypair.pem
+```
+
+* Then create the kube config file:
+
+```bash
+mkdir /home/ec2-user/.aws
+cd /home/ec2-user/.aws
+vi config
+```
+
+* hit the letter 'i' and paste the AWS CLI config contents you copied above. Hit the escape key, then shift-zz to save and exit vi
+
+Do the same for the credentials file. It should also be copied to the .aws directory.
 
 To check that this works execute:
 
@@ -148,11 +176,6 @@ ip-172-20-37-228.ec2.internal   Ready     master    48d       v1.9.6
 ip-172-20-60-179.ec2.internal   Ready     node      48d       v1.9.6
 ip-172-20-67-10.ec2.internal    Ready     node      48d       v1.9.6
 ```
-
-If you are using EKS with the Heptio authenticator, you'll need to follow the instructions here
-to get kubectl configured: https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html#eks-prereqs
-You will also need to copy your .aws/config and .aws/credentials files 
-to the EC2 instance. You'll only need the profile from these files that hosts the EKS workers.
 
 ### Step 4: Clone this repo to your EC2 instance
 On the EC2 instance created in Step 2 above, in the home directory, clone this repo:
@@ -250,6 +273,7 @@ file used by the scripts that configure Fabric.
 ```bash
 cd
 cd fabric-on-eks
+vi remote-peer/scripts/env-remote-peer.sh
 ```
 * You can choose any value for PEER_ORGS and PEER_DOMAINS, as long as it's one of the following. Select the SAME value
   for PEER_ORGS and PEER_DOMAINS, do not select PEER_ORGS=org1 and PEER_DOMAINS=org2. Options are:
@@ -898,6 +922,42 @@ Don't forget to remove your EKS cluster. Instructions can be found here:
 
 * EKS: https://docs.aws.amazon.com/eks/latest/userguide/delete-cluster.html
 * Kops: https://github.com/kubernetes/kops/blob/master/docs/cli/kops_delete_cluster.md
+
+### Debugging Fabric on Kubernetes
+
+To debug Fabric running in Kubernetes, there are a few commands that will come in handy.
+
+To see all pods running your Kubernetes cluster:
+
+```bash
+kubectl get po --all-namespaces
+```
+
+To see the pods running in a specific Kubernetes namespace, in this case 'org1':
+
+```bash
+kubectl get po -n org1
+```
+
+To see the logs for a specific pod, using the pod name from 'get po'. Do this first:
+
+```bash
+kubectl logs <pod name> -n org1
+```
+
+It may error, asking for a container name. It will then provide you with a list of the container names. Rerun the 
+statement with a container name:
+
+```bash
+kubectl logs <pod name> -n org1 -c peer1-org1
+```
+
+To describe a pod and see its associated details:
+
+```bash
+kubectl describe po <pod name> -n org1
+```
+
 
 
 

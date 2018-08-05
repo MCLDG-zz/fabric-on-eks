@@ -443,6 +443,10 @@ Resources:
               command: curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
             04_kubectl_install:
               command: chmod +x ./kubectl && sudo mv ./kubectl /usr/local/bin/kubectl
+            05_iamauth_install:
+              command: cd && curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-07-26/bin/linux/amd64/aws-iam-authenticator && chmod +x ./aws-iam-authenticator && mkdir -p $HOME/bin && cp ./aws-iam-authenticator $HOME/bin/aws-iam-authenticator && export PATH=$HOME/bin:$PATH && echo 'export PATH=$HOME/bin:$PATH' >> ~/.bashrc
+            06_heptio_install:
+              command: cd && curl -o heptio-authenticator-aws https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws && chmod +x heptio-authenticator-aws && mv heptio-authenticator-aws ~/bin/
     Properties:
       AssociatePublicIpAddress: true
       ImageId:
@@ -477,8 +481,7 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
-        Count:
-          Ref: AsgMaxSize
+        Count: '1'
     Properties:
       VPCZoneIdentifier:
       - Ref: SubnetA
@@ -489,8 +492,7 @@ Resources:
       MinSize: '1'
       MaxSize:
         Ref: AsgMaxSize
-      DesiredCapacity:
-        Ref: AsgMaxSize
+      DesiredCapacity: '1'
       Tags:
       - Key: Name
         Value: EFS FileSystem Mounted Instance

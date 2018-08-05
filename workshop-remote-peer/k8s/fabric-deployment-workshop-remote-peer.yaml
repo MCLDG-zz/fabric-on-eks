@@ -37,7 +37,7 @@ spec:
     spec:
      containers:
        - name: couchdb
-         image: hyperledger/fabric-couchdb:x86_64-1.1.0-preview
+         image: hyperledger/fabric-couchdb:latest
          ports:
           - containerPort: 5984
        - name: %PEER_PREFIX%%NUM%-%ORG%
