@@ -148,7 +148,7 @@ To copy the AWS CLI config and credentials files, do the following:
 ssh ec2-user@ec2-34-216-209-127.us-west-2.compute.amazonaws.com -i eks/eksctl-keypair.pem
 ```
 
-* Then create the kube config file:
+* Then create the AWS CLI config file:
 
 ```bash
 mkdir /home/ec2-user/.aws
@@ -539,7 +539,7 @@ Now install the chaincode:
 peer chaincode install -n marbles-workshop -v 1.0 -p github.com/hyperledger/marbles/chaincode/src/marbles
 ```
 
-The result should be:
+The result should be similar to the one below. If it failed, make sure you run the export statements from Step 10:
 
 ```bash
 # peer chaincode install -n marbles-workshop -v 1.0 -p github.com/hyperledger/marbles/chaincode/src/marbles
@@ -576,8 +576,8 @@ sets the MSP (membership service provider) context to an admin user. Admin was u
 but to invoke transactions and query the ledger state we need a user. Users are created by fabric-ca, a tool provided for 
 us by Fabric to act as a root CA and manage the registration and enrollment of identities.
 
-Once again, 'exec' into the register container. Replace 'org1' in the statements below to match the org you have chosen, 
-and execute the statements.
+Once again, 'exec' into the register container and run the export statements from Step 10. Replace 'org1' in the statements 
+below to match the org you have chosen, and execute the statements.
 
 ```bash
 export FABRIC_CA_CLIENT_HOME=/etc/hyperledger/fabric/orgs/org1/user
@@ -686,6 +686,15 @@ The Marbles client application uses the Fabric SDK and requires connectivity to 
 * Peer: this is the peer you started in step 9. We will expose this using an NLB below (NLB because peers communicate using gRPC)
 * CA: this is the CA you started in step 8. We will expose this using an ELB below (ELB because the CA server exposes a REST API)
 
+Before we continue, there is a bug in EKS that requires us to edit an IAM policy. A missing permission in an EKS role
+currently prevents the creation of load balancers, so we will edit the EKS role manually and add the permission.
+
+In the IAM Console, in the account containing your EKS cluster, find the role starting with `EKS-eks-fabric-ServiceRol-AWS`. In
+my account this is `arn:aws:iam::123456789012:role/EKS-eks-fabric-ServiceRol-AWSServiceRoleForAmazonE-1XD9JDMQKT7F9`. In
+the Permissions tab, find the policy titled `EKS-eks-fabric-ServiceRole-NLB`. Select JSON, then Edit Policy. Add this
+permission to the policy: "iam:CreateServiceLinkedRole". Make sure to use the same indents, and include a comma if
+necessary. Review and save the policy.
+
 Let's create the AWS Network Load Balancer (NLB) endpoints for the peer and the ca. The K8s YAML files to create these would 
 have been generated for you. On your EC2 bastion instance (make sure you're on the EC2 instance, and not 'exec'd into the register
 container) replace the org numbers below to match yours, and the name of the peer (i.e. michaelpeer) to match your own. 
@@ -698,7 +707,8 @@ kubectl apply -f k8s/fabric-nlb-ca-org1.yaml
 kubectl apply -f k8s/fabric-nlb-remote-peer-michaelpeer1-org1.yaml
 ```
 
-Check whether the service endpoints were created. You should see the start of a DNS endpoint in the EXTERNAL-IP column. 
+Check whether the service endpoints were created. You should see the start of a DNS endpoint in the EXTERNAL-IP column. If
+you see <pending>, rerun the 'get svc' command until you see the DNS name.
 
 ```bash
 $ kubectl get svc -n org1
@@ -854,7 +864,7 @@ gulp marbles_eks
 
 If this fails, ensure your VPN is not running.
 
-In a browser, navigate to: http://localhost:3001/home. Before doing anything else, configure the UI:
+In a browser, navigate to: http://localhost:32001/home. Before doing anything else, configure the UI:
 
 * Click 'Settings' and set Story Mode ON. This will show you what Fabric is doing behind the scenes when you create
 new marbles or transfer them.
@@ -887,10 +897,10 @@ You may need to wait a few seconds between the invoke statements, and for your n
 There is no issue with running these statements multiple times.
 
 ```bash
-export ORDERER_CONN_ARGS="-o a61689643897211e8834f06b86f026a6-4a015d7a09a2998a.elb.us-west-2.amazonaws.com:7050"
-peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_owner","o9999999999999999990","bob", "United Marbles"]}' $ORDERER_CONN_ARGS
-peer chaincode invoke -C mychannel -n marbles -c '{"Args":["init_marble","m999999999990", "blue", "35", "o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
-peer chaincode query -C mychannel -n marbles -c '{"Args":["read_everything"]}'
+export ORDERER_CONN_ARGS="-o a8a50caf493b511e8834f06b86f026a6-77ab14764e60b4a1.elb.us-west-2.amazonaws.com:7050"
+peer chaincode invoke -C mychannel -n marbles-workshop -c '{"Args":["init_owner","o9999999999999999990","bob", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode invoke -C mychannel -n marbles-workshop -c '{"Args":["init_marble","m999999999990", "blue", "35", "o9999999999999999990", "United Marbles"]}' $ORDERER_CONN_ARGS
+peer chaincode query -C mychannel -n marbles-workshop -c '{"Args":["read_everything"]}'
 ```
 
 Now jump back to the UI and you should automatically see these changes to the blockchain state reflected in the app. You can
